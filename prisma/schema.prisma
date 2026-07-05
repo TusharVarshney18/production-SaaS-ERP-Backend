@@ -1,0 +1,364 @@
+// ERPX Prisma Schema — Milestone 1: Identity & Multi-Tenancy
+// ===========================================================
+// Architecture approved and frozen. Do not modify without design review.
+//
+// Conventions:
+//   - UUID primary keys (prevent enumeration, enable distributed ID generation)
+//   - snake_case table names via @@map()
+//   - snake_case column names via @map()
+//   - Soft deletes use deletedAt + deletedByUserId
+//   - All tenant-scoped models carry organizationId (row-level isolation)
+//   - System-wide models (Permission, PermissionGroup) are NOT tenant-scoped
+// ===========================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+enum OrganizationPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DISABLED
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  API_KEY
+}
+
+enum AuditSeverity {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+// ──────────────────────────────────────────────
+// Organization (Tenant)
+// ──────────────────────────────────────────────
+
+model Organization {
+  id            String             @id @default(uuid()) @map("id")
+  name          String             @map("name")
+  code          String             @unique @map("code")
+  slug          String             @unique @map("slug")
+  logoUrl       String?            @map("logo_url")
+  domain        String?            @unique @map("domain")
+  plan          OrganizationPlan   @default(FREE) @map("plan")
+  status        OrganizationStatus @default(ACTIVE) @map("status")
+  roleVersion   Int                @default(1) @map("role_version")
+  trialEndsAt   DateTime?          @map("trial_ends_at")
+  settings      Json?              @map("settings")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedBy         User?     @relation("OrganizationDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  users     User[]
+  roles     Role[]
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  @@index([status])
+  @@index([roleVersion])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@map("organizations")
+}
+
+// ──────────────────────────────────────────────
+// User
+// ──────────────────────────────────────────────
+
+model User {
+  id              String     @id @default(uuid()) @map("id")
+  organizationId  String     @map("organization_id")
+  email           String     @map("email")
+  passwordHash    String     @map("password_hash")
+  firstName       String     @map("first_name")
+  lastName        String     @map("last_name")
+  avatarUrl       String?    @map("avatar_url")
+  phone           String?    @map("phone")
+  status          UserStatus @default(INVITED) @map("status")
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  lastLoginAt     DateTime?  @map("last_login_at")
+  lastLoginIp     String?    @map("last_login_ip")
+  failedLoginAttempts Int    @default(0) @map("failed_login_attempts")
+  lockedUntil     DateTime?  @map("locked_until")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedBy         User?     @relation("UserDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Forward relations
+  userRoles  UserRole[]
+  sessions   Session[]
+  auditLogs  AuditLog[]
+
+  // Reverse relations (users referenced by other models)
+  deletedOrganizations    Organization[]    @relation("OrganizationDeletedBy")
+  deletedUsers            User[]            @relation("UserDeletedBy")
+  deletedRoles            Role[]            @relation("RoleDeletedBy")
+  deletedPermissionGroups PermissionGroup[] @relation("PermissionGroupDeletedBy")
+  assignedUserRoles       UserRole[]        @relation("UserRoleAssignedBy")
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────
+// Role
+// ──────────────────────────────────────────────
+
+model Role {
+  id              String   @id @default(uuid()) @map("id")
+  organizationId  String   @map("organization_id")
+  name            String   @map("name")
+  slug            String   @map("slug")
+  description     String?  @map("description")
+  isSystem        Boolean  @default(false) @map("is_system")
+  isOwner         Boolean  @default(false) @map("is_owner")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedBy         User?     @relation("RoleDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([isOwner])
+  @@index([deletedAt])
+  @@map("roles")
+}
+
+// ──────────────────────────────────────────────
+// PermissionGroup
+// ──────────────────────────────────────────────
+
+model PermissionGroup {
+  id           String  @id @default(uuid()) @map("id")
+  name         String  @unique @map("name")
+  slug         String  @unique @map("slug")
+  description  String? @map("description")
+  displayOrder Int     @default(0) @map("display_order")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedBy         User?     @relation("PermissionGroupDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  permissions Permission[]
+
+  @@index([displayOrder])
+  @@index([deletedAt])
+  @@map("permission_groups")
+}
+
+// ──────────────────────────────────────────────
+// Permission
+// ──────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(uuid()) @map("id")
+  groupId     String   @map("group_id")
+  resource    String   @map("resource")
+  action      String   @map("action")
+  description String?  @map("description")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  group           PermissionGroup  @relation(fields: [groupId], references: [id])
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([groupId])
+  @@index([resource])
+  @@map("permissions")
+}
+
+// ──────────────────────────────────────────────
+// UserRole (Junction)
+// ──────────────────────────────────────────────
+
+model UserRole {
+  id              String   @id @default(uuid()) @map("id")
+  userId          String   @map("user_id")
+  roleId          String   @map("role_id")
+  assignedByUserId String? @map("assigned_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy  User? @relation("UserRoleAssignedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// ──────────────────────────────────────────────
+// RolePermission (Junction)
+// ──────────────────────────────────────────────
+
+model RolePermission {
+  id           String   @id @default(uuid()) @map("id")
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// ──────────────────────────────────────────────
+// Session
+// ──────────────────────────────────────────────
+
+model Session {
+  id              String    @id @default(uuid()) @map("id")
+  userId          String    @map("user_id")
+  organizationId  String    @map("organization_id")
+  deviceName      String?   @map("device_name")
+  userAgent       String?   @map("user_agent")
+  ipAddress       String?   @map("ip_address")
+  lastActiveAt    DateTime  @default(now()) @map("last_active_at")
+  expiresAt       DateTime  @map("expires_at")
+  revokedAt       DateTime? @map("revoked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt      @map("updated_at")
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ──────────────────────────────────────────────
+// RefreshToken
+// ──────────────────────────────────────────────
+
+model RefreshToken {
+  id                String    @id @default(uuid()) @map("id")
+  sessionId         String    @map("session_id")
+  token             String    @unique @map("token")
+  family            String    @map("family")
+  expiresAt         DateTime  @map("expires_at")
+  revokedAt         DateTime? @map("revoked_at")
+  replacedByTokenId String?   @unique @map("replaced_by_token_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  session         Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  replacedByToken RefreshToken? @relation("TokenRotation", fields: [replacedByTokenId], references: [id], onDelete: SetNull)
+  replacementToken RefreshToken? @relation("TokenRotation")
+
+  @@index([sessionId])
+  @@index([family])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ──────────────────────────────────────────────
+// AuditLog (append-only)
+// ──────────────────────────────────────────────
+
+model AuditLog {
+  id              String        @id @default(uuid()) @map("id")
+  organizationId  String        @map("organization_id")
+  actorId         String?       @map("actor_id")
+  actorType       ActorType     @map("actor_type")
+  event           String        @map("event")
+  resource        String        @map("resource")
+  resourceId      String?       @map("resource_id")
+  action          String        @map("action")
+  details         Json?         @map("details")
+  ipAddress       String?       @map("ip_address")
+  userAgent       String?       @map("user_agent")
+  severity        AuditSeverity @default(INFO) @map("severity")
+  requestId       String        @map("request_id")
+  correlationId   String?       @map("correlation_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([actorId])
+  @@index([event])
+  @@index([resource, resourceId])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([createdAt])
+  @@index([severity])
+  @@map("audit_logs")
+}
