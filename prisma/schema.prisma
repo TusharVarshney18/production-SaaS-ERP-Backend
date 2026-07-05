@@ -1,4 +1,4 @@
-// ERPX Prisma Schema — Milestone 1: Identity & Multi-Tenancy
+// ERPX Prisma Schema — Milestone 3: Organization & User Management
 // ===========================================================
 // Architecture approved and frozen. Do not modify without design review.
 //
@@ -6,7 +6,7 @@
 //   - UUID primary keys (prevent enumeration, enable distributed ID generation)
 //   - snake_case table names via @@map()
 //   - snake_case column names via @map()
-//   - Soft deletes use deletedAt + deletedByUserId
+//   - Soft deletes use deletedAt + deletedByUserId + deletedReason
 //   - All tenant-scoped models carry organizationId (row-level isolation)
 //   - System-wide models (Permission, PermissionGroup) are NOT tenant-scoped
 // ===========================================================
@@ -57,6 +57,24 @@ enum AuditSeverity {
   CRITICAL
 }
 
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum AnnouncementSeverity {
+  INFO
+  WARN
+  CRITICAL
+}
+
 // ──────────────────────────────────────────────
 // Organization (Tenant)
 // ──────────────────────────────────────────────
@@ -77,6 +95,7 @@ model Organization {
   // Soft delete
   deletedAt         DateTime? @map("deleted_at")
   deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
   deletedBy         User?     @relation("OrganizationDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
 
   // Timestamps
@@ -84,16 +103,42 @@ model Organization {
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   // Relations
-  users     User[]
-  roles     Role[]
-  sessions  Session[]
-  auditLogs AuditLog[]
+  users         User[]
+  roles         Role[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  orgSettings   OrganizationSettings?
+  subscription  OrganizationSubscription?
+  usageCounters UsageCounter[]
+  notifications Notification[]
 
   @@index([status])
   @@index([roleVersion])
   @@index([deletedAt])
   @@index([createdAt])
   @@map("organizations")
+}
+
+// ──────────────────────────────────────────────
+// OrganizationSettings
+// ──────────────────────────────────────────────
+
+model OrganizationSettings {
+  id              String   @id @default(uuid()) @map("id")
+  organizationId  String   @unique @map("organization_id")
+  timezone        String   @default("UTC")       @map("timezone")
+  currency        String   @default("USD")        @map("currency")
+  dateFormat      String   @default("YYYY-MM-DD") @map("date_format")
+  fiscalYearStart String   @default("01-01")      @map("fiscal_year_start")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("organization_settings")
 }
 
 // ──────────────────────────────────────────────
@@ -119,6 +164,7 @@ model User {
   // Soft delete
   deletedAt         DateTime? @map("deleted_at")
   deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
   deletedBy         User?     @relation("UserDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
 
   // Timestamps
@@ -129,9 +175,10 @@ model User {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Forward relations
-  userRoles  UserRole[]
-  sessions   Session[]
-  auditLogs  AuditLog[]
+  userRoles     UserRole[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
 
   // Reverse relations (users referenced by other models)
   deletedOrganizations    Organization[]    @relation("OrganizationDeletedBy")
@@ -163,6 +210,7 @@ model Role {
   // Soft delete
   deletedAt         DateTime? @map("deleted_at")
   deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
   deletedBy         User?     @relation("RoleDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
 
   // Timestamps
@@ -361,4 +409,242 @@ model AuditLog {
   @@index([createdAt])
   @@index([severity])
   @@map("audit_logs")
+}
+
+// ──────────────────────────────────────────────
+// SubscriptionPlan
+// ──────────────────────────────────────────────
+
+model SubscriptionPlan {
+  id              String          @id @default(uuid()) @map("id")
+  name            String          @map("name")
+  slug            String          @unique @map("slug")
+  description     String?         @map("description")
+  billingInterval BillingInterval @map("billing_interval")
+  price           Int             @map("price")
+  currency        String          @default("USD") @map("currency")
+  trialPeriodDays Int             @default(0) @map("trial_period_days")
+  isActive        Boolean         @default(true) @map("is_active")
+  sortOrder       Int             @default(0) @map("sort_order")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  features      PlanFeature[]
+  subscriptions OrganizationSubscription[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("subscription_plans")
+}
+
+// ──────────────────────────────────────────────
+// Feature
+// ──────────────────────────────────────────────
+
+model Feature {
+  id          String   @id @default(uuid()) @map("id")
+  name        String   @map("name")
+  slug        String   @unique @map("slug")
+  description String?  @map("description")
+  group       String   @map("group")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  plans         PlanFeature[]
+  usageCounters UsageCounter[]
+
+  @@index([isActive])
+  @@index([group])
+  @@index([deletedAt])
+  @@map("features")
+}
+
+// ──────────────────────────────────────────────
+// PlanFeature (Junction)
+// ──────────────────────────────────────────────
+
+model PlanFeature {
+  id          String  @id @default(uuid()) @map("id")
+  planId      String  @map("plan_id")
+  featureId   String  @map("feature_id")
+  value       String  @default("true") @map("value")
+  isAvailable Boolean @default(true) @map("is_available")
+
+  // Relations
+  plan    SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature          @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+  @@map("plan_features")
+}
+
+// ──────────────────────────────────────────────
+// OrganizationSubscription
+// ──────────────────────────────────────────────
+
+model OrganizationSubscription {
+  id                 String             @id @default(uuid()) @map("id")
+  organizationId     String             @unique @map("organization_id")
+  planId             String             @map("plan_id")
+  status             SubscriptionStatus @default(ACTIVE) @map("status")
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  trialEndsAt        DateTime?          @map("trial_ends_at")
+  canceledAt         DateTime?          @map("canceled_at")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([organizationId])
+  @@index([planId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@index([deletedAt])
+  @@map("organization_subscriptions")
+}
+
+// ──────────────────────────────────────────────
+// UsageCounter
+// ──────────────────────────────────────────────
+
+model UsageCounter {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  featureId      String   @map("feature_id")
+  period         String   @map("period")
+  usage          Int      @default(0) @map("usage")
+  softLimit      Int?     @map("soft_limit")
+  hardLimit      Int?     @map("hard_limit")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  feature      Feature      @relation(fields: [featureId], references: [id])
+
+  @@unique([organizationId, featureId, period])
+  @@index([organizationId])
+  @@index([featureId])
+  @@index([period])
+  @@map("usage_counters")
+}
+
+// ──────────────────────────────────────────────
+// Notification
+// ──────────────────────────────────────────────
+
+model Notification {
+  id             String    @id @default(uuid()) @map("id")
+  organizationId String    @map("organization_id")
+  userId         String?   @map("user_id")
+  type           String    @map("type")
+  title          String    @map("title")
+  body           String?   @map("body")
+  data           Json?     @map("data")
+  isRead         Boolean   @default(false) @map("is_read")
+  readAt         DateTime? @map("read_at")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+  @@index([deletedAt])
+  @@map("notifications")
+}
+
+// ──────────────────────────────────────────────
+// Announcement
+// ──────────────────────────────────────────────
+
+model Announcement {
+  id          String               @id @default(uuid()) @map("id")
+  title       String               @map("title")
+  body        String?              @map("body")
+  severity    AnnouncementSeverity @default(INFO) @map("severity")
+  startsAt    DateTime             @map("starts_at")
+  endsAt      DateTime?            @map("ends_at")
+  isPublished Boolean              @default(false) @map("is_published")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([severity])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@index([isPublished])
+  @@index([deletedAt])
+  @@map("announcements")
+}
+
+// ──────────────────────────────────────────────
+// SystemSetting
+// ──────────────────────────────────────────────
+
+model SystemSetting {
+  id          String  @id @default(uuid()) @map("id")
+  key         String  @unique @map("key")
+  value       String  @map("value")
+  description String? @map("description")
+  category    String  @map("category")
+  isEncrypted Boolean @default(false) @map("is_encrypted")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([category])
+  @@index([key])
+  @@map("system_settings")
 }

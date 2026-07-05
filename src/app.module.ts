@@ -6,6 +6,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { OrganizationSettingsModule } from './organization-settings/organization-settings.module';
+import { RbacModule } from './rbac/rbac.module';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -41,6 +46,11 @@ import jwtConfig from './config/jwt.config';
     PrismaModule,
     HealthModule,
     AuthModule,
+    OrganizationsModule,
+    OrganizationSettingsModule,
+    RbacModule,
+    AuthorizationModule,
+    AuditLogModule,
   ],
   providers: [
     {
