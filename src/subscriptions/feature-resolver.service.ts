@@ -3,10 +3,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FeatureResult, FeatureCheckResult } from './interfaces/feature-result.interface';
 
 @Injectable()
-export class FeatureService {
-  private readonly logger = new Logger(FeatureService.name);
+export class FeatureResolver {
+  private readonly logger = new Logger(FeatureResolver.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async getEnabledFeatures(organizationId: string): Promise<FeatureResult[]> {
+    return this.getOrganizationFeatures(organizationId);
+  }
+
+  async hasFeature(organizationId: string, featureSlug: string): Promise<boolean> {
+    const result = await this.checkFeature(organizationId, featureSlug);
+    return result.enabled;
+  }
 
   async getOrganizationFeatures(organizationId: string): Promise<FeatureResult[]> {
     const subscription = await this.prisma.organizationSubscription.findUnique({
@@ -80,10 +89,5 @@ export class FeatureService {
   async getFeatureValue(organizationId: string, featureSlug: string): Promise<string | null> {
     const result = await this.checkFeature(organizationId, featureSlug);
     return result.enabled ? result.value : null;
-  }
-
-  async isFeatureEnabled(organizationId: string, featureSlug: string): Promise<boolean> {
-    const result = await this.checkFeature(organizationId, featureSlug);
-    return result.enabled;
   }
 }

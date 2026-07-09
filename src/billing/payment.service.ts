@@ -1,108 +1,166 @@
-import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
-import { PaymentProvider } from './interfaces/payment-provider.interface';
-import { CreateCheckoutDto } from './dto/create-checkout.dto';
-import { VerifyPaymentDto } from './dto/verify-payment.dto';
-import { CreateBillingSubscriptionDto } from './dto/create-subscription.dto';
-import { CancelBillingSubscriptionDto } from './dto/cancel-subscription.dto';
-import { RefundPaymentDto } from './dto/refund-payment.dto';
-import { HandleWebhookDto } from './dto/handle-webhook.dto';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PaymentQueryDto } from './dto/payment-query.dto';
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly providers = new Map<string, PaymentProvider>();
 
-  registerProvider(name: string, provider: PaymentProvider): void {
-    if (this.providers.has(name)) {
-      this.logger.warn(`Provider "${name}" is already registered. Overwriting.`);
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(dto: CreatePaymentDto) {
+    const netAmount = dto.amount - 0;
+    const payment = await this.prisma.payment.create({
+      data: {
+        organizationId: dto.organizationId,
+        subscriptionId: dto.subscriptionId ?? null,
+        invoiceId: dto.invoiceId ?? null,
+        amount: dto.amount,
+        currency: dto.currency ?? 'USD',
+        provider: dto.provider,
+        providerPaymentId: dto.providerPaymentId ?? null,
+        providerOrderId: dto.providerOrderId ?? null,
+        status: dto.status ?? 'PENDING',
+        netAmount,
+        taxAmount: 0,
+        feeAmount: 0,
+        metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+      },
+    });
+
+    this.logger.log(`Payment created: ${payment.id} (${payment.amount} ${payment.currency})`);
+    return payment;
+  }
+
+  async findById(id: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { invoice: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
     }
-    this.providers.set(name, provider);
-    this.logger.log(`Payment provider registered: ${name}`);
+
+    return payment;
   }
 
-  getProvider(name: string): PaymentProvider {
-    const provider = this.providers.get(name);
-    if (!provider) {
-      throw new NotImplementedException(
-        `Payment provider "${name}" is not registered. Available providers: ${[...this.providers.keys()].join(', ') || 'none'}`,
-      );
+  async findByProviderPaymentId(providerPaymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { providerPaymentId },
+      include: { invoice: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
     }
-    return provider;
+
+    return payment;
   }
 
-  getRegisteredProviders(): string[] {
-    return [...this.providers.keys()];
+  async findAll(query: PaymentQueryDto) {
+    const {
+      organizationId,
+      subscriptionId,
+      status,
+      provider,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
+
+    const where: Prisma.PaymentWhereInput = {};
+
+    if (organizationId) where.organizationId = organizationId;
+    if (subscriptionId) where.subscriptionId = subscriptionId;
+    if (status) where.status = status;
+    if (provider) where.provider = provider;
+
+    const orderBy: Prisma.PaymentOrderByWithRelationInput = {
+      [sortBy]: sortOrder,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { invoice: true },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
-  async createCheckout(dto: CreateCheckoutDto) {
-    const provider = this.getProvider('razorpay');
-    return provider.createCheckout({
-      amount: dto.amount,
-      currency: dto.currency,
-      organizationId: dto.organizationId,
-      subscriptionId: dto.subscriptionId,
-      planId: dto.planId,
-      description: dto.description,
-      metadata: dto.metadata,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.cancelUrl,
+  async markSucceeded(id: string, providerPaymentId: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        status: 'SUCCEEDED',
+        providerPaymentId,
+        paidAt: new Date(),
+      },
     });
+
+    this.logger.log(`Payment marked succeeded: ${id}`);
+    return updated;
   }
 
-  async verifyPayment(dto: VerifyPaymentDto) {
-    const provider = this.getProvider(dto.provider);
-    return provider.verifyPayment({
-      sessionId: dto.sessionId,
-      paymentId: dto.paymentId,
-      provider: dto.provider,
-      signature: dto.signature,
-      metadata: dto.metadata,
+  async markFailed(id: string, failureReason: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        status: 'FAILED',
+        failedAt: new Date(),
+        failureReason,
+      },
     });
+
+    this.logger.log(`Payment marked failed: ${id} - ${failureReason}`);
+    return updated;
   }
 
-  async createSubscription(dto: CreateBillingSubscriptionDto) {
-    const provider = this.getProvider('razorpay');
-    return provider.createSubscription({
-      organizationId: dto.organizationId,
-      planId: dto.planId,
-      planName: dto.planName,
-      amount: dto.amount,
-      currency: dto.currency,
-      interval: dto.interval,
-      trialPeriodDays: dto.trialPeriodDays,
-      metadata: dto.metadata,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.cancelUrl,
+  async refund(id: string, amount?: number, reason?: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    if (payment.status !== 'SUCCEEDED') {
+      throw new Error('Only succeeded payments can be refunded');
+    }
+
+    const refundAmount = amount ?? payment.amount;
+    const newRefundedAmount = payment.refundedAmount + refundAmount;
+    const newStatus = newRefundedAmount >= payment.amount ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
+
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        refundedAmount: newRefundedAmount,
+      },
     });
+
+    this.logger.log(
+      `Payment refunded: ${id} (${refundAmount} ${payment.currency})${reason ? ` - ${reason}` : ''}`,
+    );
+    return updated;
   }
 
-  async cancelSubscription(dto: CancelBillingSubscriptionDto) {
-    const provider = this.getProvider(dto.provider);
-    return provider.cancelSubscription({
-      providerSubscriptionId: dto.providerSubscriptionId,
-      provider: dto.provider,
-      atPeriodEnd: dto.atPeriodEnd,
-      metadata: dto.metadata,
-    });
-  }
-
-  async refundPayment(dto: RefundPaymentDto) {
-    const provider = this.getProvider('razorpay');
-    return provider.refundPayment({
-      paymentId: dto.paymentId,
-      amount: dto.amount,
-      reason: dto.reason,
-      metadata: dto.metadata,
-    });
-  }
-
-  async handleWebhook(dto: HandleWebhookDto) {
-    const provider = this.getProvider(dto.provider);
-    return provider.handleWebhook({
-      provider: dto.provider,
-      rawBody: dto.rawBody,
-      headers: dto.headers,
-      signature: dto.signature,
-    });
+  async findByOrganization(organizationId: string, query: PaymentQueryDto) {
+    return this.findAll({ ...query, organizationId });
   }
 }

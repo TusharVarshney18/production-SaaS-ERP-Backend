@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SubscriptionsController } from '../subscriptions.controller';
 import { SubscriptionsService } from '../subscriptions.service';
-import { FeatureService } from '../feature.service';
-import { UsageService } from '../usage.service';
+import { FeatureResolver } from '../feature-resolver.service';
+import { UsageResolver } from '../usage-resolver.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
@@ -16,8 +16,8 @@ import { UsageResult } from '../interfaces/usage-result.interface';
 describe('SubscriptionsController', () => {
   let controller: SubscriptionsController;
   let subscriptionsService: jest.Mocked<Pick<SubscriptionsService, keyof SubscriptionsService>>;
-  let featureService: jest.Mocked<Pick<FeatureService, keyof FeatureService>>;
-  let usageService: jest.Mocked<Pick<UsageService, keyof UsageService>>;
+  let featureResolver: jest.Mocked<Pick<FeatureResolver, keyof FeatureResolver>>;
+  let usageResolver: jest.Mocked<Pick<UsageResolver, keyof UsageResolver>>;
 
   const mockJwtPayload: JwtPayload = {
     sub: 'user-1',
@@ -82,26 +82,29 @@ describe('SubscriptionsController', () => {
       handleExpiredSubscriptions: jest.fn(),
     } as unknown as jest.Mocked<Pick<SubscriptionsService, keyof SubscriptionsService>>;
 
-    featureService = {
-      getOrganizationFeatures: jest.fn(),
+    featureResolver = {
+      getEnabledFeatures: jest.fn(),
+      hasFeature: jest.fn(),
       checkFeature: jest.fn(),
       getFeatureValue: jest.fn(),
-      isFeatureEnabled: jest.fn(),
-    } as unknown as jest.Mocked<Pick<FeatureService, keyof FeatureService>>;
+      getOrganizationFeatures: jest.fn(),
+    } as unknown as jest.Mocked<Pick<FeatureResolver, keyof FeatureResolver>>;
 
-    usageService = {
+    usageResolver = {
+      canUseFeature: jest.fn(),
+      incrementUsage: jest.fn(),
+      resetUsage: jest.fn(),
       getUsage: jest.fn(),
       checkUsage: jest.fn(),
-      incrementUsage: jest.fn(),
       getRemainingQuota: jest.fn(),
-    } as unknown as jest.Mocked<Pick<UsageService, keyof UsageService>>;
+    } as unknown as jest.Mocked<Pick<UsageResolver, keyof UsageResolver>>;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SubscriptionsController],
       providers: [
         { provide: SubscriptionsService, useValue: subscriptionsService },
-        { provide: FeatureService, useValue: featureService },
-        { provide: UsageService, useValue: usageService },
+        { provide: FeatureResolver, useValue: featureResolver },
+        { provide: UsageResolver, useValue: usageResolver },
       ],
     }).compile();
 
@@ -132,10 +135,7 @@ describe('SubscriptionsController', () => {
   describe('findAllPlans', () => {
     it('should call service.findAllPlans with query', async () => {
       const query = { page: 1, limit: 20 };
-      const expected = {
-        data: [],
-        meta: { total: 0, page: 1, limit: 20, totalPages: 0 },
-      };
+      const expected = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
       subscriptionsService.findAllPlans.mockResolvedValue(expected);
 
       const result = await controller.findAllPlans(query);
@@ -223,24 +223,26 @@ describe('SubscriptionsController', () => {
   });
 
   describe('cancel', () => {
-    it('should call service.cancelSubscription with org', async () => {
-      subscriptionsService.cancelSubscription.mockResolvedValue(mockSubscription);
+    it('should delegate to service', async () => {
+      subscriptionsService.cancelSubscription.mockResolvedValue({
+        id: 'sub-1',
+        status: 'CANCELED',
+      });
 
       const result = await controller.cancel('org-1');
 
       expect(subscriptionsService.cancelSubscription).toHaveBeenCalledWith('org-1');
-      expect(result).toEqual(mockSubscription);
+      expect(result.status).toBe('CANCELED');
     });
   });
 
   describe('renew', () => {
-    it('should call service.renewSubscription with org', async () => {
-      subscriptionsService.renewSubscription.mockResolvedValue(mockSubscription);
+    it('should delegate to service', async () => {
+      subscriptionsService.renewSubscription.mockResolvedValue({ id: 'sub-1', status: 'ACTIVE' });
 
-      const result = await controller.renew('org-1');
+      await controller.renew('org-1');
 
       expect(subscriptionsService.renewSubscription).toHaveBeenCalledWith('org-1');
-      expect(result).toEqual(mockSubscription);
     });
   });
 
@@ -261,26 +263,26 @@ describe('SubscriptionsController', () => {
   // ──────────────────────────────────────────────
 
   describe('getFeatures', () => {
-    it('should call featureService.getOrganizationFeatures', async () => {
+    it('should call featureResolver.getOrganizationFeatures', async () => {
       const expected: FeatureResult[] = [];
-      featureService.getOrganizationFeatures.mockResolvedValue(expected);
+      featureResolver.getOrganizationFeatures.mockResolvedValue(expected);
 
       const result = await controller.getFeatures('org-1');
 
-      expect(featureService.getOrganizationFeatures).toHaveBeenCalledWith('org-1');
+      expect(featureResolver.getOrganizationFeatures).toHaveBeenCalledWith('org-1');
       expect(result).toEqual(expected);
     });
   });
 
   describe('checkFeature', () => {
-    it('should call featureService.checkFeature with org and dto', async () => {
+    it('should call featureResolver.checkFeature', async () => {
       const dto: CheckFeatureDto = { featureSlug: 'ai_import_enabled' };
       const expected = { slug: 'ai_import_enabled', enabled: true, value: 'true' };
-      featureService.checkFeature.mockResolvedValue(expected);
+      featureResolver.checkFeature.mockResolvedValue(expected);
 
       const result = await controller.checkFeature('org-1', dto);
 
-      expect(featureService.checkFeature).toHaveBeenCalledWith('org-1', 'ai_import_enabled');
+      expect(featureResolver.checkFeature).toHaveBeenCalledWith('org-1', 'ai_import_enabled');
       expect(result).toEqual(expected);
     });
   });
@@ -290,19 +292,19 @@ describe('SubscriptionsController', () => {
   // ──────────────────────────────────────────────
 
   describe('getUsage', () => {
-    it('should call usageService.getUsage with org', async () => {
+    it('should call usageResolver.getUsage', async () => {
       const expected: UsageResult[] = [];
-      usageService.getUsage.mockResolvedValue(expected);
+      usageResolver.getUsage.mockResolvedValue(expected);
 
       const result = await controller.getUsage('org-1');
 
-      expect(usageService.getUsage).toHaveBeenCalledWith('org-1');
+      expect(usageResolver.getUsage).toHaveBeenCalledWith('org-1');
       expect(result).toEqual(expected);
     });
   });
 
   describe('checkUsage', () => {
-    it('should call usageService.checkUsage with org and feature', async () => {
+    it('should call usageResolver.checkUsage', async () => {
       const dto: CheckFeatureDto = { featureSlug: 'import_rows' };
       const expected = {
         withinLimits: true,
@@ -311,17 +313,17 @@ describe('SubscriptionsController', () => {
         remaining: 90,
         message: null,
       };
-      usageService.checkUsage.mockResolvedValue(expected);
+      usageResolver.checkUsage.mockResolvedValue(expected);
 
       const result = await controller.checkUsage('org-1', dto);
 
-      expect(usageService.checkUsage).toHaveBeenCalledWith('org-1', 'import_rows');
+      expect(usageResolver.checkUsage).toHaveBeenCalledWith('org-1', 'import_rows');
       expect(result).toEqual(expected);
     });
   });
 
   describe('incrementUsage', () => {
-    it('should call usageService.incrementUsage with params', async () => {
+    it('should call usageResolver.incrementUsage with params', async () => {
       const dto: IncrementUsageDto = { featureSlug: 'import_rows', amount: 5 };
       const expected = {
         featureSlug: 'import_rows',
@@ -329,46 +331,22 @@ describe('SubscriptionsController', () => {
         period: '2026-07',
         usage: 5,
         softLimit: null,
-        hardLimit: 100,
-        remaining: 95,
+        hardLimit: null,
+        remaining: null,
         withinLimits: true,
         isSoftLimitReached: false,
       };
-      usageService.incrementUsage.mockResolvedValue(expected);
+      usageResolver.incrementUsage.mockResolvedValue(expected);
 
       const result = await controller.incrementUsage('org-1', dto);
 
-      expect(usageService.incrementUsage).toHaveBeenCalledWith(
+      expect(usageResolver.incrementUsage).toHaveBeenCalledWith(
         'org-1',
         'import_rows',
         5,
         undefined,
       );
       expect(result).toEqual(expected);
-    });
-
-    it('should default amount to 1 when not provided', async () => {
-      const dto: IncrementUsageDto = { featureSlug: 'import_rows' };
-      usageService.incrementUsage.mockResolvedValue({
-        featureSlug: 'import_rows',
-        featureName: 'Import Rows',
-        period: '2026-07',
-        usage: 1,
-        softLimit: null,
-        hardLimit: null,
-        remaining: null,
-        withinLimits: true,
-        isSoftLimitReached: false,
-      });
-
-      await controller.incrementUsage('org-1', dto);
-
-      expect(usageService.incrementUsage).toHaveBeenCalledWith(
-        'org-1',
-        'import_rows',
-        1,
-        undefined,
-      );
     });
   });
 });

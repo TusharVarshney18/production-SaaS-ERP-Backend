@@ -1,298 +1,282 @@
-import { NotImplementedException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
+import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { PaymentService } from '../payment.service';
-import { PaymentProvider } from '../interfaces/payment-provider.interface';
-import { CreateCheckoutDto } from '../dto/create-checkout.dto';
-import { VerifyPaymentDto } from '../dto/verify-payment.dto';
-import { CreateBillingSubscriptionDto } from '../dto/create-subscription.dto';
-import { CancelBillingSubscriptionDto } from '../dto/cancel-subscription.dto';
-import { RefundPaymentDto } from '../dto/refund-payment.dto';
-import { HandleWebhookDto } from '../dto/handle-webhook.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreatePaymentDto } from '../dto/create-payment.dto';
 
 describe('PaymentService', () => {
   let service: PaymentService;
+  let prisma: DeepMockProxy<PrismaService>;
 
-  const mockProvider: PaymentProvider = {
-    name: 'test_provider',
-    createCheckout: jest.fn(),
-    verifyPayment: jest.fn(),
-    createSubscription: jest.fn(),
-    cancelSubscription: jest.fn(),
-    refundPayment: jest.fn(),
-    handleWebhook: jest.fn(),
+  const mockPayment = {
+    id: 'pay-1',
+    organizationId: 'org-1',
+    subscriptionId: null,
+    invoiceId: null,
+    amount: 2900,
+    currency: 'USD',
+    status: 'PENDING' as const,
+    provider: 'razorpay',
+    providerPaymentId: null,
+    providerOrderId: null,
+    refundedAmount: 0,
+    taxAmount: 0,
+    feeAmount: 0,
+    netAmount: 2900,
+    metadata: null,
+    paidAt: null,
+    failedAt: null,
+    failureReason: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [PaymentService],
-    }).compile();
-
-    service = module.get<PaymentService>(PaymentService);
+    prisma = mockDeep<PrismaService>();
+    service = new PaymentService(prisma);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('registerProvider', () => {
-    it('should register a provider', () => {
-      service.registerProvider('test', mockProvider);
+  describe('create', () => {
+    const dto: CreatePaymentDto = {
+      organizationId: 'org-1',
+      amount: 2900,
+      provider: 'razorpay',
+    };
 
-      const providers = service.getRegisteredProviders();
-      expect(providers).toContain('test');
-    });
+    it('should create a payment record', async () => {
+      (prisma.payment.create as jest.Mock).mockResolvedValue(mockPayment);
 
-    it('should warn and overwrite when registering duplicate', () => {
-      const warnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation(() => {});
+      const result = await service.create(dto);
 
-      service.registerProvider('test', mockProvider);
-      service.registerProvider('test', mockProvider);
-
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('already registered'));
-      warnSpy.mockRestore();
-    });
-  });
-
-  describe('getProvider', () => {
-    it('should return a registered provider', () => {
-      service.registerProvider('test', mockProvider);
-
-      const provider = service.getProvider('test');
-
-      expect(provider).toBe(mockProvider);
-    });
-
-    it('should throw NotImplementedException for unregistered provider', () => {
-      expect(() => service.getProvider('nonexistent')).toThrow(NotImplementedException);
-    });
-  });
-
-  describe('getRegisteredProviders', () => {
-    it('should return empty array when no providers registered', () => {
-      expect(service.getRegisteredProviders()).toEqual([]);
-    });
-
-    it('should return list of registered provider names', () => {
-      service.registerProvider('alpha', mockProvider);
-      service.registerProvider('beta', mockProvider);
-
-      const providers = service.getRegisteredProviders();
-      expect(providers).toEqual(['alpha', 'beta']);
-    });
-  });
-
-  describe('createCheckout', () => {
-    it('should delegate to razorpay provider', async () => {
-      service.registerProvider('razorpay', mockProvider);
-      (mockProvider.createCheckout as jest.Mock).mockResolvedValue({
-        checkoutUrl: 'https://checkout.example.com',
-        sessionId: 'sess_123',
-        provider: 'razorpay',
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: {
+          organizationId: 'org-1',
+          subscriptionId: null,
+          invoiceId: null,
+          amount: 2900,
+          currency: 'USD',
+          provider: 'razorpay',
+          providerPaymentId: null,
+          providerOrderId: null,
+          status: 'PENDING',
+          netAmount: 2900,
+          taxAmount: 0,
+          feeAmount: 0,
+          metadata: undefined,
+        },
       });
+      expect(result).toEqual(mockPayment);
+    });
 
-      const dto: CreateCheckoutDto = {
-        amount: 2900,
-        currency: 'USD',
+    it('should accept optional fields', async () => {
+      const fullDto: CreatePaymentDto = {
         organizationId: 'org-1',
         subscriptionId: 'sub-1',
-        planId: 'plan-1',
-        successUrl: 'https://app.erpx.io/success',
-        cancelUrl: 'https://app.erpx.io/cancel',
+        invoiceId: 'inv-1',
+        amount: 5000,
+        currency: 'INR',
+        provider: 'stripe',
+        providerPaymentId: 'pi_abc',
+        providerOrderId: 'or_abc',
+        status: 'SUCCEEDED',
+        metadata: { source: 'webhook' },
       };
+      (prisma.payment.create as jest.Mock).mockResolvedValue({ ...mockPayment, ...fullDto });
 
-      const result = await service.createCheckout(dto);
+      await service.create(fullDto);
 
-      expect(mockProvider.createCheckout).toHaveBeenCalledWith({
-        amount: 2900,
-        currency: 'USD',
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: {
+          organizationId: 'org-1',
+          subscriptionId: 'sub-1',
+          invoiceId: 'inv-1',
+          amount: 5000,
+          currency: 'INR',
+          provider: 'stripe',
+          providerPaymentId: 'pi_abc',
+          providerOrderId: 'or_abc',
+          status: 'SUCCEEDED',
+          netAmount: 5000,
+          taxAmount: 0,
+          feeAmount: 0,
+          metadata: { source: 'webhook' },
+        },
+      });
+    });
+  });
+
+  describe('findById', () => {
+    it('should return payment with invoice', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+        ...mockPayment,
+        invoice: null,
+      });
+
+      const result = await service.findById('pay-1');
+
+      expect(prisma.payment.findUnique).toHaveBeenCalledWith({
+        where: { id: 'pay-1' },
+        include: { invoice: true },
+      });
+      expect(result.id).toBe('pay-1');
+    });
+
+    it('should throw NotFoundException if not found', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.findById('nonexistent')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findByProviderPaymentId', () => {
+    it('should return payment by provider payment ID', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+        ...mockPayment,
+        providerPaymentId: 'pi_abc',
+        invoice: null,
+      });
+
+      const result = await service.findByProviderPaymentId('pi_abc');
+
+      expect(result.providerPaymentId).toBe('pi_abc');
+    });
+
+    it('should throw NotFoundException if not found', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.findByProviderPaymentId('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return paginated payments', async () => {
+      (prisma.payment.findMany as jest.Mock).mockResolvedValue([mockPayment]);
+      (prisma.payment.count as jest.Mock).mockResolvedValue(1);
+
+      const result = await service.findAll({});
+
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should apply filters', async () => {
+      (prisma.payment.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.payment.count as jest.Mock).mockResolvedValue(0);
+
+      await service.findAll({
         organizationId: 'org-1',
-        subscriptionId: 'sub-1',
-        planId: 'plan-1',
-        description: undefined,
-        metadata: undefined,
-        successUrl: 'https://app.erpx.io/success',
-        cancelUrl: 'https://app.erpx.io/cancel',
-      });
-      expect(result.checkoutUrl).toBe('https://checkout.example.com');
-    });
-
-    it('should throw when razorpay is not registered', async () => {
-      const dto: CreateCheckoutDto = {
-        amount: 2900,
-        currency: 'USD',
-        organizationId: 'org-1',
-        subscriptionId: 'sub-1',
-        planId: 'plan-1',
-        successUrl: 'https://app.erpx.io/success',
-        cancelUrl: 'https://app.erpx.io/cancel',
-      };
-
-      await expect(service.createCheckout(dto)).rejects.toThrow(NotImplementedException);
-    });
-  });
-
-  describe('verifyPayment', () => {
-    it('should delegate to the specified provider', async () => {
-      service.registerProvider('stripe', mockProvider);
-      (mockProvider.verifyPayment as jest.Mock).mockResolvedValue({
-        verified: true,
-        paymentId: 'pay_123',
-        status: 'paid',
-        amount: 2900,
-        currency: 'USD',
+        status: 'SUCCEEDED',
         provider: 'stripe',
       });
 
-      const dto: VerifyPaymentDto = {
-        sessionId: 'sess_123',
-        provider: 'stripe',
-      };
-
-      const result = await service.verifyPayment(dto);
-
-      expect(mockProvider.verifyPayment).toHaveBeenCalledWith({
-        sessionId: 'sess_123',
-        paymentId: undefined,
-        provider: 'stripe',
-        signature: undefined,
-        metadata: undefined,
-      });
-      expect(result.verified).toBe(true);
+      const where = (prisma.payment.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.organizationId).toBe('org-1');
+      expect(where.status).toBe('SUCCEEDED');
+      expect(where.provider).toBe('stripe');
     });
   });
 
-  describe('createSubscription', () => {
-    it('should delegate to razorpay provider', async () => {
-      service.registerProvider('razorpay', mockProvider);
-      (mockProvider.createSubscription as jest.Mock).mockResolvedValue({
-        subscriptionId: 'sub_123',
-        providerSubscriptionId: 'ps_123',
-        status: 'active',
-        provider: 'razorpay',
+  describe('markSucceeded', () => {
+    it('should mark payment as succeeded', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(mockPayment);
+      (prisma.payment.update as jest.Mock).mockResolvedValue({
+        ...mockPayment,
+        status: 'SUCCEEDED',
+        providerPaymentId: 'pi_abc',
+        paidAt: new Date(),
       });
 
-      const dto: CreateBillingSubscriptionDto = {
-        organizationId: 'org-1',
-        planId: 'plan-1',
-        planName: 'Growth Plan',
-        amount: 2900,
-        currency: 'USD',
-        interval: 'monthly',
-        successUrl: 'https://app.erpx.io/success',
-        cancelUrl: 'https://app.erpx.io/cancel',
-      };
+      const result = await service.markSucceeded('pay-1', 'pi_abc');
 
-      const result = await service.createSubscription(dto);
+      expect(prisma.payment.update).toHaveBeenCalledWith({
+        where: { id: 'pay-1' },
+        data: {
+          status: 'SUCCEEDED',
+          providerPaymentId: 'pi_abc',
+          paidAt: expect.any(Date),
+        },
+      });
+      expect(result.status).toBe('SUCCEEDED');
+    });
 
-      expect(mockProvider.createSubscription).toHaveBeenCalled();
-      expect(result.subscriptionId).toBe('sub_123');
+    it('should throw if not found', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.markSucceeded('pay-1', 'pi_abc')).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('cancelSubscription', () => {
-    it('should delegate to the specified provider', async () => {
-      service.registerProvider('stripe', mockProvider);
-      (mockProvider.cancelSubscription as jest.Mock).mockResolvedValue(undefined);
-
-      const dto: CancelBillingSubscriptionDto = {
-        providerSubscriptionId: 'ps_123',
-        provider: 'stripe',
-      };
-
-      await service.cancelSubscription(dto);
-
-      expect(mockProvider.cancelSubscription).toHaveBeenCalledWith({
-        providerSubscriptionId: 'ps_123',
-        provider: 'stripe',
-        atPeriodEnd: undefined,
-        metadata: undefined,
+  describe('markFailed', () => {
+    it('should mark payment as failed', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(mockPayment);
+      (prisma.payment.update as jest.Mock).mockResolvedValue({
+        ...mockPayment,
+        status: 'FAILED',
+        failedAt: new Date(),
+        failureReason: 'Insufficient funds',
       });
+
+      const result = await service.markFailed('pay-1', 'Insufficient funds');
+
+      expect(result.status).toBe('FAILED');
+      expect(result.failureReason).toBe('Insufficient funds');
     });
   });
 
-  describe('refundPayment', () => {
-    it('should delegate to razorpay provider', async () => {
-      service.registerProvider('razorpay', mockProvider);
-      (mockProvider.refundPayment as jest.Mock).mockResolvedValue({
-        refundId: 'rf_123',
-        paymentId: 'pay_123',
-        amount: 2900,
-        status: 'processed',
-        provider: 'razorpay',
+  describe('refund', () => {
+    const succeededPayment = { ...mockPayment, status: 'SUCCEEDED' as const };
+
+    it('should fully refund a payment', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(succeededPayment);
+      (prisma.payment.update as jest.Mock).mockResolvedValue({
+        ...succeededPayment,
+        status: 'REFUNDED',
+        refundedAmount: 2900,
       });
 
-      const dto: RefundPaymentDto = {
-        paymentId: 'pay_123',
-      };
+      const result = await service.refund('pay-1');
 
-      const result = await service.refundPayment(dto);
+      expect(result.status).toBe('REFUNDED');
+      expect(result.refundedAmount).toBe(2900);
+    });
 
-      expect(mockProvider.refundPayment).toHaveBeenCalled();
-      expect(result.refundId).toBe('rf_123');
+    it('should partially refund a payment', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(succeededPayment);
+      (prisma.payment.update as jest.Mock).mockResolvedValue({
+        ...succeededPayment,
+        status: 'PARTIALLY_REFUNDED',
+        refundedAmount: 1000,
+      });
+
+      const result = await service.refund('pay-1', 1000);
+
+      expect(result.status).toBe('PARTIALLY_REFUNDED');
+      expect(result.refundedAmount).toBe(1000);
+    });
+
+    it('should throw error for non-succeeded payment', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(mockPayment);
+
+      await expect(service.refund('pay-1')).rejects.toThrow(
+        'Only succeeded payments can be refunded',
+      );
     });
   });
 
-  describe('handleWebhook', () => {
-    it('should delegate to the specified provider', async () => {
-      service.registerProvider('razorpay', mockProvider);
-      (mockProvider.handleWebhook as jest.Mock).mockResolvedValue({
-        processed: true,
-        event: 'payment.captured',
-        data: { payment_id: 'pay_123' },
-      });
+  describe('findByOrganization', () => {
+    it('should scope query to organization', async () => {
+      (prisma.payment.findMany as jest.Mock).mockResolvedValue([mockPayment]);
+      (prisma.payment.count as jest.Mock).mockResolvedValue(1);
 
-      const dto: HandleWebhookDto = {
-        provider: 'razorpay',
-        rawBody: { event: 'payment.captured' },
-        headers: { 'x-webhook-signature': 'sig_abc' },
-        signature: 'sig_abc',
-      };
+      const result = await service.findByOrganization('org-1', {});
 
-      const result = await service.handleWebhook(dto);
-
-      expect(mockProvider.handleWebhook).toHaveBeenCalledWith({
-        provider: 'razorpay',
-        rawBody: { event: 'payment.captured' },
-        headers: { 'x-webhook-signature': 'sig_abc' },
-        signature: 'sig_abc',
-      });
-      expect(result.processed).toBe(true);
-    });
-  });
-
-  describe('onModuleInit auto-registration', () => {
-    it('should register razorpay and stripe providers on init', async () => {
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          PaymentService,
-          {
-            provide: 'RazorpayProvider',
-            useValue: { ...mockProvider, name: 'razorpay' },
-          },
-          {
-            provide: 'StripeProvider',
-            useValue: { ...mockProvider, name: 'stripe' },
-          },
-        ],
-      }).compile();
-
-      const paymentService = module.get<PaymentService>(PaymentService);
-      const logSpy = jest.spyOn(paymentService['logger'], 'log').mockImplementation(() => {});
-
-      const razorpayProvider = {
-        ...mockProvider,
-        name: 'razorpay' as const,
-      };
-      const stripeProvider = {
-        ...mockProvider,
-        name: 'stripe' as const,
-      };
-
-      paymentService.registerProvider('razorpay', razorpayProvider);
-      paymentService.registerProvider('stripe', stripeProvider);
-
-      expect(paymentService.getRegisteredProviders()).toEqual(['razorpay', 'stripe']);
-      logSpy.mockRestore();
+      expect(result.data).toHaveLength(1);
     });
   });
 });

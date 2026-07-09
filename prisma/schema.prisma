@@ -63,16 +63,54 @@ enum BillingInterval {
 }
 
 enum SubscriptionStatus {
+  TRIAL
   ACTIVE
+  GRACE_PERIOD
+  PAST_DUE
+  SUSPENDED
   CANCELED
   EXPIRED
-  PAST_DUE
 }
 
 enum AnnouncementSeverity {
   INFO
   WARN
   CRITICAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELED
+  REFUNDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum PaymentMethodType {
+  CARD
+  UPI
+  NET_BANKING
+  WALLET
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
 }
 
 // ──────────────────────────────────────────────
@@ -111,6 +149,11 @@ model Organization {
   subscription  OrganizationSubscription?
   usageCounters UsageCounter[]
   notifications Notification[]
+  payments       Payment[]
+  invoices       Invoice[]
+  couponUsages   CouponUsage[]
+  paymentMethods PaymentMethod[]
+  billingAddresses BillingAddress[]
 
   @@index([status])
   @@index([roleVersion])
@@ -626,6 +669,253 @@ model Announcement {
   @@index([isPublished])
   @@index([deletedAt])
   @@map("announcements")
+}
+
+// ──────────────────────────────────────────────
+// Payment
+// ──────────────────────────────────────────────
+
+model Payment {
+  id              String        @id @default(uuid()) @map("id")
+  organizationId  String        @map("organization_id")
+  subscriptionId  String?       @map("subscription_id")
+  invoiceId       String?       @map("invoice_id")
+  amount          Int           @map("amount")
+  currency        String        @default("USD") @map("currency")
+  status          PaymentStatus @default(PENDING) @map("status")
+  provider        String        @map("provider")
+  providerPaymentId  String?    @unique @map("provider_payment_id")
+  providerOrderId    String?    @map("provider_order_id")
+  refundedAmount  Int           @default(0) @map("refunded_amount")
+  taxAmount       Int           @default(0) @map("tax_amount")
+  feeAmount       Int           @default(0) @map("fee_amount")
+  netAmount       Int           @default(0) @map("net_amount")
+  metadata        Json?         @map("metadata")
+  paidAt          DateTime?     @map("paid_at")
+  failedAt        DateTime?     @map("failed_at")
+  failureReason   String?       @map("failure_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([provider])
+  @@index([createdAt])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+// ──────────────────────────────────────────────
+// Invoice
+// ──────────────────────────────────────────────
+
+model Invoice {
+  id              String        @id @default(uuid()) @map("id")
+  organizationId  String        @map("organization_id")
+  subscriptionId  String?       @map("subscription_id")
+  invoiceNumber   String        @map("invoice_number")
+  amount          Int           @map("amount")
+  currency        String        @default("USD") @map("currency")
+  status          InvoiceStatus @default(DRAFT) @map("status")
+  taxAmount       Int           @default(0) @map("tax_amount")
+  discountAmount  Int           @default(0) @map("discount_amount")
+  totalAmount     Int           @map("total_amount")
+  periodStart     DateTime?     @map("period_start")
+  periodEnd       DateTime?     @map("period_end")
+  dueAt           DateTime?     @map("due_at")
+  paidAt          DateTime?     @map("paid_at")
+  billingAddressId String?      @map("billing_address_id")
+  notes           String?       @map("notes")
+  metadata        Json?         @map("metadata")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  billingAddress  BillingAddress? @relation(fields: [billingAddressId], references: [id], onDelete: SetNull)
+  payments        Payment[]
+  couponUsages    CouponUsage[]
+
+  @@unique([organizationId, invoiceNumber])
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([dueAt])
+  @@index([paidAt])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("invoices")
+}
+
+// ──────────────────────────────────────────────
+// Coupon
+// ──────────────────────────────────────────────
+
+model Coupon {
+  id              String       @id @default(uuid()) @map("id")
+  code            String       @unique @map("code")
+  name            String       @map("name")
+  description     String?      @map("description")
+  discountType    DiscountType @map("discount_type")
+  discountValue   Int          @map("discount_value")
+  maxUses         Int?         @map("max_uses")
+  usedCount       Int          @default(0) @map("used_count")
+  maxUsesPerCustomer Int?      @map("max_uses_per_customer")
+  currency        String?      @map("currency")
+  minAmount       Int?         @map("min_amount")
+  appliesToPlanIds Json?       @map("applies_to_plan_ids")
+  startsAt        DateTime?    @map("starts_at")
+  expiresAt       DateTime?    @map("expires_at")
+  isActive        Boolean      @default(true) @map("is_active")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  usages CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([deletedAt])
+  @@map("coupons")
+}
+
+// ──────────────────────────────────────────────
+// CouponUsage
+// ──────────────────────────────────────────────
+
+model CouponUsage {
+  id             String   @id @default(uuid()) @map("id")
+  couponId       String   @map("coupon_id")
+  organizationId String   @map("organization_id")
+  invoiceId      String?  @map("invoice_id")
+  discountAmount Int      @map("discount_amount")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  coupon       Coupon       @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@unique([couponId, organizationId, invoiceId])
+  @@index([couponId])
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@map("coupon_usages")
+}
+
+// ──────────────────────────────────────────────
+// PaymentMethod
+// ──────────────────────────────────────────────
+
+model PaymentMethod {
+  id                      String            @id @default(uuid()) @map("id")
+  organizationId          String            @map("organization_id")
+  provider                String            @map("provider")
+  providerPaymentMethodId String            @map("provider_payment_method_id")
+  type                    PaymentMethodType @map("type")
+  last4                   String?           @map("last4")
+  brand                   String?           @map("brand")
+  expMonth                Int?              @map("exp_month")
+  expYear                 Int?              @map("exp_year")
+  isDefault               Boolean           @default(false) @map("is_default")
+  billingAddressId        String?           @map("billing_address_id")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  billingAddress  BillingAddress? @relation(fields: [billingAddressId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, providerPaymentMethodId])
+  @@index([organizationId])
+  @@index([provider])
+  @@index([isDefault])
+  @@map("payment_methods")
+}
+
+// ──────────────────────────────────────────────
+// BillingAddress
+// ──────────────────────────────────────────────
+
+model BillingAddress {
+  id              String  @id @default(uuid()) @map("id")
+  organizationId  String  @map("organization_id")
+  line1           String  @map("line1")
+  line2           String? @map("line2")
+  city            String  @map("city")
+  state           String? @map("state")
+  postalCode      String? @map("postal_code")
+  country         String  @default("US") @map("country")
+  fullName        String? @map("full_name")
+  phone           String? @map("phone")
+  email           String? @map("email")
+  isDefault       Boolean @default(false) @map("is_default")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices       Invoice[]
+  paymentMethods PaymentMethod[]
+
+  @@index([organizationId])
+  @@index([isDefault])
+  @@map("billing_addresses")
+}
+
+// ──────────────────────────────────────────────
+// WebhookEvent
+// ──────────────────────────────────────────────
+
+model WebhookEvent {
+  id            String              @id @default(uuid()) @map("id")
+  provider      String              @map("provider")
+  eventType     String              @map("event_type")
+  eventId       String?             @unique @map("event_id")
+  status        WebhookEventStatus  @default(RECEIVED) @map("status")
+  requestBody   Json?               @map("request_body")
+  responseBody  Json?               @map("response_body")
+  processedAt   DateTime?           @map("processed_at")
+  failureReason String?             @map("failure_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([provider])
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("webhook_events")
 }
 
 // ──────────────────────────────────────────────

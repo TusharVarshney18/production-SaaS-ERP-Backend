@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionLifecycleService } from './subscription-lifecycle.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanQueryDto } from './dto/plan-query.dto';
@@ -17,7 +18,10 @@ import { ChangePlanDto } from './dto/change-plan.dto';
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycle: SubscriptionLifecycleService,
+  ) {}
 
   // ──────────────────────────────────────────────
   // SubscriptionPlan CRUD
@@ -83,61 +87,33 @@ export class SubscriptionsService {
       this.prisma.subscriptionPlan.count({ where }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
   async findPlanById(id: string) {
     const plan = await this.prisma.subscriptionPlan.findUnique({
       where: { id, deletedAt: null },
       include: {
-        features: {
-          include: { feature: true },
-        },
-        _count: {
-          select: { subscriptions: true },
-        },
+        features: { include: { feature: true } },
+        _count: { select: { subscriptions: true } },
       },
     });
-
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
-    }
-
+    if (!plan) throw new NotFoundException('Subscription plan not found');
     return plan;
   }
 
   async findPlanBySlug(slug: string) {
     const plan = await this.prisma.subscriptionPlan.findUnique({
       where: { slug, deletedAt: null },
-      include: {
-        features: {
-          include: { feature: true },
-        },
-      },
+      include: { features: { include: { feature: true } } },
     });
-
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
-    }
-
+    if (!plan) throw new NotFoundException('Subscription plan not found');
     return plan;
   }
 
   async updatePlan(id: string, dto: UpdatePlanDto) {
-    const plan = await this.prisma.subscriptionPlan.findUnique({
-      where: { id, deletedAt: null },
-    });
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
-    }
+    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id, deletedAt: null } });
+    if (!plan) throw new NotFoundException('Subscription plan not found');
 
     const updated = await this.prisma.subscriptionPlan.update({
       where: { id },
@@ -152,21 +128,16 @@ export class SubscriptionsService {
         sortOrder: dto.sortOrder,
       },
     });
-
     this.logger.log(`Subscription plan updated: ${id}`);
     return updated;
   }
 
   async softDeletePlan(id: string, userId: string, reason?: string) {
-    const plan = await this.prisma.subscriptionPlan.findUnique({
-      where: { id, deletedAt: null },
-    });
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
-    }
+    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id, deletedAt: null } });
+    if (!plan) throw new NotFoundException('Subscription plan not found');
 
     const activeSubscriptions = await this.prisma.organizationSubscription.count({
-      where: { planId: id, status: { in: ['ACTIVE', 'PAST_DUE'] } },
+      where: { planId: id, status: { in: ['ACTIVE', 'PAST_DUE', 'TRIAL', 'GRACE_PERIOD'] } },
     });
 
     if (activeSubscriptions > 0) {
@@ -184,79 +155,36 @@ export class SubscriptionsService {
         deletedReason: reason ?? null,
       },
     });
-
     this.logger.log(`Subscription plan soft-deleted: ${id}`);
   }
 
   // ──────────────────────────────────────────────
-  // OrganizationSubscription Lifecycle
+  // OrganizationSubscription Lifecycle (delegates)
   // ──────────────────────────────────────────────
 
   async activateTrial(organizationId: string, dto: CreateSubscriptionDto) {
-    const existing = await this.prisma.organizationSubscription.findUnique({
-      where: { organizationId },
-    });
-    if (existing) {
-      throw new ConflictException('Organization already has a subscription');
-    }
-
     const plan = await this.prisma.subscriptionPlan.findUnique({
       where: { id: dto.planId, deletedAt: null, isActive: true },
     });
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found or inactive');
-    }
+    if (!plan) throw new NotFoundException('Subscription plan not found or inactive');
 
     const trialDays = dto.trialPeriodDays ?? plan.trialPeriodDays;
-    const now = new Date();
-    const periodStart = new Date(now);
-    const periodEnd = new Date(now);
-    periodEnd.setDate(periodEnd.getDate() + (trialDays > 0 ? trialDays : 30));
+    await this.lifecycle.activateTrial(organizationId, dto.planId, trialDays);
 
-    const subscription = await this.prisma.organizationSubscription.create({
-      data: {
-        organizationId,
-        planId: plan.id,
-        status: trialDays > 0 ? 'ACTIVE' : 'ACTIVE',
-        currentPeriodStart: periodStart,
-        currentPeriodEnd: periodEnd,
-        trialEndsAt: trialDays > 0 ? new Date(now.getTime() + trialDays * 86400000) : null,
-      },
+    const subscription = await this.prisma.organizationSubscription.findUnique({
+      where: { organizationId },
       include: { plan: true },
     });
 
-    await this.prisma.organization.update({
-      where: { id: organizationId },
-      data: {
-        plan: this.mapPlanSlugToEnum(plan.slug),
-        trialEndsAt: subscription.trialEndsAt,
-      },
-    });
-
-    this.logger.log(
-      `Trial activated for organization ${organizationId} on plan ${plan.slug} (${trialDays} days)`,
-    );
     return subscription;
   }
 
   async getSubscription(organizationId: string) {
     const subscription = await this.prisma.organizationSubscription.findUnique({
       where: { organizationId },
-      include: {
-        plan: {
-          include: {
-            features: {
-              include: { feature: true },
-            },
-          },
-        },
-      },
+      include: { plan: { include: { features: { include: { feature: true } } } } },
     });
-
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
-
+    if (!subscription) throw new NotFoundException('No subscription found for this organization');
     return subscription;
   }
 
@@ -265,20 +193,14 @@ export class SubscriptionsService {
       where: { organizationId },
       include: { plan: true },
     });
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
+    if (!subscription) throw new NotFoundException('No subscription found for this organization');
 
     const targetPlan = await this.prisma.subscriptionPlan.findUnique({
       where: { id: dto.planId, deletedAt: null, isActive: true },
     });
-    if (!targetPlan) {
-      throw new NotFoundException('Target plan not found or inactive');
-    }
-
-    if (subscription.planId === targetPlan.id) {
+    if (!targetPlan) throw new NotFoundException('Target plan not found or inactive');
+    if (subscription.planId === targetPlan.id)
       throw new BadRequestException('Organization is already on this plan');
-    }
 
     const isUpgrade = targetPlan.sortOrder > subscription.plan.sortOrder;
 
@@ -288,152 +210,42 @@ export class SubscriptionsService {
       );
     }
 
-    if (dto.immediate) {
-      const updated = await this.prisma.organizationSubscription.update({
-        where: { organizationId },
-        data: {
-          planId: targetPlan.id,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: this.calculatePeriodEnd(targetPlan.billingInterval),
-        },
-        include: { plan: true },
-      });
-
-      await this.syncOrganizationPlan(organizationId, targetPlan.slug);
-
-      this.logger.log(
-        `Organization ${organizationId} upgraded immediately to plan ${targetPlan.slug}`,
-      );
-      return updated;
-    }
-
     const updated = await this.prisma.organizationSubscription.update({
       where: { organizationId },
       data: {
         planId: targetPlan.id,
+        ...(dto.immediate
+          ? {
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: this.calculatePeriodEnd(targetPlan.billingInterval),
+            }
+          : {}),
       },
       include: { plan: true },
     });
 
     await this.syncOrganizationPlan(organizationId, targetPlan.slug);
-
-    this.logger.log(
-      `Organization ${organizationId} plan changed to ${targetPlan.slug} (effective ${
-        isUpgrade ? 'immediately' : 'at period end'
-      })`,
-    );
+    this.logger.log(`Organization ${organizationId} plan changed to ${targetPlan.slug}`);
     return updated;
   }
 
   async cancelSubscription(organizationId: string) {
-    const subscription = await this.prisma.organizationSubscription.findUnique({
-      where: { organizationId },
-    });
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
-
-    if (subscription.status === 'CANCELED') {
-      throw new BadRequestException('Subscription is already canceled');
-    }
-
-    const updated = await this.prisma.organizationSubscription.update({
-      where: { organizationId },
-      data: {
-        status: 'CANCELED',
-        canceledAt: new Date(),
-      },
-      include: { plan: true },
-    });
-
-    this.logger.log(`Organization ${organizationId} subscription canceled`);
-    return updated;
+    return this.lifecycle.cancel(organizationId);
   }
 
   async renewSubscription(organizationId: string) {
-    const subscription = await this.prisma.organizationSubscription.findUnique({
-      where: { organizationId },
-      include: { plan: true },
-    });
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
-
-    if (subscription.status === 'EXPIRED') {
-      throw new BadRequestException('Cannot renew an expired subscription. Create a new one.');
-    }
-
-    const now = new Date();
-
-    if (subscription.status === 'CANCELED') {
-      const updated = await this.prisma.organizationSubscription.update({
-        where: { organizationId },
-        data: {
-          status: 'ACTIVE',
-          canceledAt: null,
-          currentPeriodStart: now,
-          currentPeriodEnd: this.calculatePeriodEnd(subscription.plan.billingInterval),
-        },
-        include: { plan: true },
-      });
-
-      this.logger.log(`Organization ${organizationId} subscription renewed (reactivated)`);
-      return updated;
-    }
-
-    const updated = await this.prisma.organizationSubscription.update({
-      where: { organizationId },
-      data: {
-        currentPeriodStart: now,
-        currentPeriodEnd: this.calculatePeriodEnd(subscription.plan.billingInterval),
-      },
-      include: { plan: true },
-    });
-
-    this.logger.log(`Organization ${organizationId} subscription renewed (period extended)`);
-    return updated;
+    return this.lifecycle.renew(organizationId);
   }
 
   async expireSubscription(organizationId: string) {
-    const subscription = await this.prisma.organizationSubscription.findUnique({
-      where: { organizationId },
-    });
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
-
-    if (subscription.status === 'EXPIRED') {
-      return subscription;
-    }
-
-    const updated = await this.prisma.organizationSubscription.update({
-      where: { organizationId },
-      data: {
-        status: 'EXPIRED',
-      },
-      include: { plan: true },
-    });
-
-    await this.prisma.organization.update({
-      where: { id: organizationId },
-      data: {
-        plan: 'FREE',
-        trialEndsAt: null,
-      },
-    });
-
-    this.logger.log(`Organization ${organizationId} subscription expired`);
-    return updated;
+    return this.lifecycle.expire(organizationId);
   }
 
   async markPastDue(organizationId: string) {
     const subscription = await this.prisma.organizationSubscription.findUnique({
       where: { organizationId },
     });
-    if (!subscription) {
-      throw new NotFoundException('No subscription found for this organization');
-    }
-
+    if (!subscription) throw new NotFoundException('No subscription found for this organization');
     if (subscription.status !== 'ACTIVE') {
       throw new BadRequestException(
         `Cannot mark as past_due when status is ${subscription.status}`,
@@ -445,36 +257,13 @@ export class SubscriptionsService {
       data: { status: 'PAST_DUE' },
       include: { plan: true },
     });
-
     this.logger.log(`Organization ${organizationId} subscription marked as past_due`);
     return updated;
   }
 
   async handleExpiredSubscriptions() {
-    const now = new Date();
-
-    const expiredSubscriptions = await this.prisma.organizationSubscription.findMany({
-      where: {
-        status: 'ACTIVE',
-        currentPeriodEnd: { lte: now },
-      },
-      select: { organizationId: true },
-    });
-
-    this.logger.log(`Found ${expiredSubscriptions.length} expired subscription(s) to process`);
-
-    for (const sub of expiredSubscriptions) {
-      try {
-        await this.expireSubscription(sub.organizationId);
-      } catch (error) {
-        this.logger.error(
-          `Failed to expire subscription for organization ${sub.organizationId}`,
-          error instanceof Error ? error.stack : undefined,
-        );
-      }
-    }
-
-    return { processed: expiredSubscriptions.length };
+    const processed = await this.lifecycle.processExpiredSubscriptions();
+    return { processed };
   }
 
   // ──────────────────────────────────────────────
@@ -508,16 +297,9 @@ export class SubscriptionsService {
 
   private calculatePeriodEnd(interval: string): Date {
     const date = new Date();
-    switch (interval) {
-      case 'MONTHLY':
-        date.setMonth(date.getMonth() + 1);
-        break;
-      case 'YEARLY':
-        date.setFullYear(date.getFullYear() + 1);
-        break;
-      default:
-        date.setMonth(date.getMonth() + 1);
-    }
+    if (interval === 'MONTHLY') date.setMonth(date.getMonth() + 1);
+    else if (interval === 'YEARLY') date.setFullYear(date.getFullYear() + 1);
+    else date.setMonth(date.getMonth() + 1);
     return date;
   }
 }

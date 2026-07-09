@@ -1,16 +1,56 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FeatureService } from './feature.service';
+import { FeatureResolver } from './feature-resolver.service';
 import { UsageResult, UsageCheckResult } from './interfaces/usage-result.interface';
 
 @Injectable()
-export class UsageService {
-  private readonly logger = new Logger(UsageService.name);
+export class UsageResolver {
+  private readonly logger = new Logger(UsageResolver.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly featureService: FeatureService,
+    private readonly featureResolver: FeatureResolver,
   ) {}
+
+  async canUseFeature(
+    organizationId: string,
+    featureSlug: string,
+    _amount = 1,
+    period?: string,
+  ): Promise<UsageCheckResult> {
+    return this.checkUsage(organizationId, featureSlug, period);
+  }
+
+  async incrementUsage(
+    organizationId: string,
+    featureSlug: string,
+    amount = 1,
+    period?: string,
+  ): Promise<UsageResult> {
+    return this.increment(organizationId, featureSlug, amount, period);
+  }
+
+  async resetUsage(organizationId: string, featureSlug: string, period?: string): Promise<void> {
+    const currentPeriod = period || this.getCurrentPeriod();
+    const feature = await this.prisma.feature.findUnique({
+      where: { slug: featureSlug },
+    });
+    if (!feature) {
+      throw new NotFoundException(`Feature "${featureSlug}" not found`);
+    }
+
+    await this.prisma.usageCounter.deleteMany({
+      where: {
+        organizationId,
+        featureId: feature.id,
+        period: currentPeriod,
+      },
+    });
+
+    this.logger.log(
+      `Usage reset: org=${organizationId}, feature=${featureSlug}, period=${currentPeriod}`,
+    );
+  }
 
   async getUsage(organizationId: string): Promise<UsageResult[]> {
     const subscription = await this.prisma.organizationSubscription.findUnique({
@@ -54,7 +94,7 @@ export class UsageService {
   ): Promise<UsageCheckResult> {
     const currentPeriod = period || this.getCurrentPeriod();
 
-    const limitValue = await this.featureService.getFeatureValue(organizationId, featureSlug);
+    const limitValue = await this.featureResolver.getFeatureValue(organizationId, featureSlug);
 
     const limit = limitValue !== null ? parseInt(limitValue, 10) : null;
 
@@ -69,12 +109,25 @@ export class UsageService {
       };
     }
 
+    const feature = await this.prisma.feature.findUnique({
+      where: { slug: featureSlug },
+    });
+
+    if (!feature) {
+      return {
+        withinLimits: true,
+        current: 0,
+        limit: null,
+        remaining: null,
+        message: null,
+      };
+    }
+
     const counter = await this.prisma.usageCounter.findUnique({
       where: {
         organizationId_featureId_period: {
           organizationId,
-          featureId:
-            (await this.prisma.feature.findUnique({ where: { slug: featureSlug } }))?.id ?? '',
+          featureId: feature.id,
           period: currentPeriod,
         },
       },
@@ -106,7 +159,7 @@ export class UsageService {
     };
   }
 
-  async incrementUsage(
+  async increment(
     organizationId: string,
     featureSlug: string,
     amount = 1,
@@ -141,7 +194,7 @@ export class UsageService {
       },
     });
 
-    const limitValue = await this.featureService.getFeatureValue(organizationId, featureSlug);
+    const limitValue = await this.featureResolver.getFeatureValue(organizationId, featureSlug);
     const hardLimit = limitValue !== null ? parseInt(limitValue, 10) : null;
 
     const remaining =

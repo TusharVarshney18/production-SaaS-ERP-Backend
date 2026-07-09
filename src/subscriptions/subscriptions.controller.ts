@@ -14,8 +14,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { SubscriptionsService } from './subscriptions.service';
-import { FeatureService } from './feature.service';
-import { UsageService } from './usage.service';
+import { FeatureResolver } from './feature-resolver.service';
+import { UsageResolver } from './usage-resolver.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanQueryDto } from './dto/plan-query.dto';
@@ -31,8 +31,8 @@ import { IncrementUsageDto } from './dto/increment-usage.dto';
 export class SubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
-    private readonly featureService: FeatureService,
-    private readonly usageService: UsageService,
+    private readonly featureResolver: FeatureResolver,
+    private readonly usageResolver: UsageResolver,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -127,13 +127,13 @@ export class SubscriptionsController {
   @Get('organizations/:orgId/features')
   @ApiOperation({ summary: 'Get all enabled features for an organization' })
   async getFeatures(@Param('orgId') orgId: string) {
-    return this.featureService.getOrganizationFeatures(orgId);
+    return this.featureResolver.getOrganizationFeatures(orgId);
   }
 
   @Post('organizations/:orgId/features/check')
   @ApiOperation({ summary: 'Check if a specific feature is available' })
   async checkFeature(@Param('orgId') orgId: string, @Body() dto: CheckFeatureDto) {
-    return this.featureService.checkFeature(orgId, dto.featureSlug);
+    return this.featureResolver.checkFeature(orgId, dto.featureSlug);
   }
 
   // ──────────────────────────────────────────────
@@ -143,18 +143,18 @@ export class SubscriptionsController {
   @Get('organizations/:orgId/usage')
   @ApiOperation({ summary: 'Get usage counters for an organization' })
   async getUsage(@Param('orgId') orgId: string) {
-    return this.usageService.getUsage(orgId);
+    return this.usageResolver.getUsage(orgId);
   }
 
   @Post('organizations/:orgId/usage/check')
   @ApiOperation({ summary: 'Check usage against limit for a feature' })
   async checkUsage(@Param('orgId') orgId: string, @Body() dto: CheckFeatureDto) {
-    return this.usageService.checkUsage(orgId, dto.featureSlug);
+    return this.usageResolver.checkUsage(orgId, dto.featureSlug);
   }
 
   @Post('organizations/:orgId/usage/increment')
   @ApiOperation({ summary: 'Increment usage counter for a feature' })
   async incrementUsage(@Param('orgId') orgId: string, @Body() dto: IncrementUsageDto) {
-    return this.usageService.incrementUsage(orgId, dto.featureSlug, dto.amount ?? 1, dto.period);
+    return this.usageResolver.incrementUsage(orgId, dto.featureSlug, dto.amount ?? 1, dto.period);
   }
 }
