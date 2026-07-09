@@ -23,14 +23,6 @@ export interface CheckoutResponse {
   provider: PaymentProviderName;
 }
 
-export interface VerifyPaymentParams {
-  sessionId: string;
-  paymentId?: string;
-  provider: PaymentProviderName;
-  signature?: string;
-  metadata?: Record<string, unknown>;
-}
-
 export interface PaymentVerificationResponse {
   verified: boolean;
   paymentId: string;

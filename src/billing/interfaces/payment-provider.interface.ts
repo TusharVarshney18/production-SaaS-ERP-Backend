@@ -1,6 +1,5 @@
 import {
   CreateCheckoutParams,
-  VerifyPaymentParams,
   CreateSubscriptionParams,
   CancelSubscriptionParams,
   RefundPaymentParams,
@@ -11,6 +10,7 @@ import {
   RefundResponse,
   WebhookHandlerResponse,
 } from './payment.types';
+import { VerifyPaymentParams } from '../providers/payment-gateway.interface';
 
 export interface PaymentProvider {
   readonly name: string;

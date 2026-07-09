@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { InvoiceService } from './invoice.service';
 import { CouponService } from './coupon.service';
-import { PaymentGatewayService } from './providers/payment-gateway.service';
+import { PaymentGatewayService } from './services/payment-gateway.service';
 
 @Injectable()
 export class BillingService {

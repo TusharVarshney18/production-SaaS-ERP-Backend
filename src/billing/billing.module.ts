@@ -3,9 +3,10 @@ import { BillingService } from './billing.service';
 import { PaymentService } from './payment.service';
 import { InvoiceService } from './invoice.service';
 import { CouponService } from './coupon.service';
-import { PaymentGatewayService } from './providers/payment-gateway.service';
-import { RazorpayProvider } from './providers/razorpay.provider';
-import { StripeProvider } from './providers/stripe.provider';
+import { PaymentProviderFactory } from './providers/payment-provider.factory';
+import { PaymentGatewayService } from './services/payment-gateway.service';
+import { RazorpayProvider } from './providers/razorpay/razorpay.provider';
+import { StripeProvider } from './providers/stripe/stripe.provider';
 
 @Module({
   providers: [
@@ -13,21 +14,22 @@ import { StripeProvider } from './providers/stripe.provider';
     PaymentService,
     InvoiceService,
     CouponService,
+    PaymentProviderFactory,
     PaymentGatewayService,
     RazorpayProvider,
     StripeProvider,
   ],
-  exports: [BillingService, PaymentService, InvoiceService, CouponService],
+  exports: [BillingService, PaymentService, InvoiceService, CouponService, PaymentGatewayService],
 })
 export class BillingModule implements OnModuleInit {
   constructor(
-    private readonly paymentGatewayService: PaymentGatewayService,
+    private readonly factory: PaymentProviderFactory,
     private readonly razorpayProvider: RazorpayProvider,
     private readonly stripeProvider: StripeProvider,
   ) {}
 
   onModuleInit(): void {
-    this.paymentGatewayService.registerProvider('razorpay', this.razorpayProvider);
-    this.paymentGatewayService.registerProvider('stripe', this.stripeProvider);
+    this.factory.register('razorpay', this.razorpayProvider);
+    this.factory.register('stripe', this.stripeProvider);
   }
 }

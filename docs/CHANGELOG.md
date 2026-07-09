@@ -1,0 +1,154 @@
+# ERPX — Changelog
+
+> **All notable changes to the ERPX backend platform.**
+
+---
+
+## Sprint 3.6.1 — 2026-07-09
+
+### Real Razorpay Integration
+- Installed `razorpay` npm package (official SDK)
+- Replaced mock RazorpayProvider with real SDK implementation
+- Implemented order creation via `razorpay.orders.create()` with org/subscription/plan metadata in notes
+- Implemented payment signature verification via `crypto.createHmac('sha256', ...)`
+- Implemented webhook signature verification via HMAC-SHA256
+- Implemented payment refund via `razorpay.payments.refund()` with partial refund support
+- Implemented payment fetch via `razorpay.payments.fetch()` with status mapping
+- Added `ensureInitialized()` guard to prevent unconfigured usage
+- Added `RazorpayInstance`, `RazorpayOrder`, `RazorpayPayment`, `RazorpayRefund` TypeScript interfaces
+- Created `razorpay.config.ts` for environment-based configuration
+- Added `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` environment variables
+- Added Joi validation for Razorpay env vars
+- Registered razorpay config in `ConfigModule.forRoot()`
+- Wrote 16 comprehensive unit tests with mocked SDK
+- All existing interfaces and services remain unchanged
+
+**Tests:** 291 total (+16) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 3.6 — 2026-07-09
+
+### Payment Gateway Architecture
+- Created `PaymentGateway` interface with 4-method contract (`createCheckout`, `verifyPayment`, `refund`, `handleWebhook`)
+- Created `PaymentProviderFactory` for DI-based provider registration and lookup
+- Created `PaymentGatewayService` facade with no hardcoded provider names
+- Moved RazorpayProvider and StripeProvider into subdirectories with provider-specific DTOs
+- Created `razorpay.dto.ts` and `stripe.dto.ts` with provider-specific types
+- Created `payment-provider.factory.spec.ts`, `razorpay.provider.spec.ts`, `stripe.provider.spec.ts`
+- Removed old provider files and updated BillingModule
+- Updated BillingService import path
+
+**Tests:** 275 total (+7) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 3.5 — 2026-07-09
+
+### Full Subscription Engine
+- **SubscriptionService** facade — `getCurrentSubscription()`, `activateSubscription()`, `cancelSubscription()`, `renewSubscription()`, `suspendSubscription()`
+- **SubscriptionLifecycleService** — state machine with `VALID_TRANSITIONS` map for Trial → Active → Grace Period → Suspended → Expired → Cancelled
+- **PlanResolver** — `resolveActivePlan()`, `resolveBillingCycle()`, `resolveRenewalDate()`
+- **FeatureResolver** — `hasFeature()`, `getFeatures()`, `getEnabledFeatures()`
+- **UsageResolver** — `canUse()`, `incrementUsage()`, `resetUsage()`, `getRemainingQuota()`
+- **EntitlementService** — unified authorization: `can(feature)`, `checkUsage(feature)`, `getReason(result)`
+- Added `TRIAL`, `GRACE_PERIOD`, `SUSPENDED` to `SubscriptionStatus` enum
+- Renamed `feature.service.ts` → `feature-resolver.service.ts`, `usage.service.ts` → `usage-resolver.service.ts`
+- Restructured subscriptions module
+
+**Tests:** 267 total (+10) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 3.4 — 2026-07-09
+
+### Billing Domain
+- **Prisma models:** Payment, Invoice, Coupon, CouponUsage, PaymentMethod, BillingAddress, WebhookEvent
+- **PaymentService** — CRUD, mark succeeded/failed, refund with partial support
+- **InvoiceService** — CRUD with auto-numbering (`INV-YYYYMM-NNNN`), issue, markPaid, cancel
+- **CouponService** — CRUD, 8-point validation pipeline, apply, recordUsage
+- **BillingService** — facade orchestrator
+- DTOs with Swagger and class-validator on all services
+- Updated billing module structure with `payment-gateway.service.ts`
+- Proper indexes, foreign keys, multi-currency, tax fields
+
+**Tests:** 257 (+81) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 3.2 — 2026-07-08
+
+### Billing Foundation
+- Payment provider abstraction with strategy pattern
+- `PaymentProvider` interface with 6 methods
+- `PaymentService` skeleton with provider registry
+- RazorpayProvider and StripeProvider stubs
+- DTOs: CreateCheckout, VerifyPayment, CreateSubscription, CancelSubscription, RefundPayment, HandleWebhook
+- Payment types: `PaymentProviderName`, `PaymentCurrency`, `PaymentStatus`
+
+**Tests:** 200 (+16) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 3.1 — 2026-07-08
+
+### Subscription Engine (Core)
+- SubscriptionPlan CRUD with Prisma (existing models used)
+- OrganizationSubscription lifecycle (activate trial, upgrade, downgrade, cancel, renew, expire)
+- Feature resolution service (`getOrganizationFeatures`, `checkFeature`)
+- Usage limit service (`checkUsage`, `incrementUsage`, `getRemainingQuota`)
+- DTO validation with Swagger documentation
+- Proper logging on all service methods
+- 81 new unit tests
+
+**Tests:** 186 (+81) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 2 — 2026-07-07
+
+### Core API Foundation
+- **Authentication:** JWT-based with refresh token rotation
+  - Register with auto-organization creation
+  - Login with email/password
+  - Token refresh with rotation (token family tracking)
+  - Logout with session revocation
+  - Concurrent session limit (max 5 per user)
+- **Organization Management:** CRUD with soft-delete, restore, pagination, search
+- **Organization Settings:** Timezone, currency, date format, fiscal year
+- **RBAC (Roles & Permissions):**
+  - Pre-defined roles: Owner, Admin, Member, Viewer
+  - Custom roles for Business+ plans
+  - Permission groups with display ordering
+  - Role assignment and removal
+  - Permission guard using Reflector metadata
+- **Audit Logging:** Append-only structured audit trail
+  - Actor types: USER, SYSTEM, API_KEY
+  - Severity levels: INFO, WARN, ERROR, CRITICAL
+  - Filterable by event, resource, actor, severity, date range
+  - Standard event taxonomy (user.*, org.*, role.*, system.*)
+- **Infrastructure:**
+  - Global exception filter with structured error responses
+  - Request ID middleware with `X-Request-Id` header
+  - Response transformation interceptor
+  - Logging interceptor (METHOD URL STATUS DURATION)
+  - Helmet security headers, CORS, compression
+  - Swagger documentation at `/api/docs`
+  - Rate limiting (100 req/min per IP)
+
+**Tests:** 105 | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
+## Sprint 1 — 2026-07-06
+
+### Project Scaffolding
+- NestJS project initialized with CLI
+- Prisma ORM configured with PostgreSQL
+- Docker Compose for local PostgreSQL + Redis
+- ESLint + Prettier configuration
+- Jest testing framework with `jest-mock-extended`
+- Turborepo monorepo structure (planned)
+- Environment configuration with Joi validation
+- Logger setup with `nestjs-pino`
+- Health check endpoints (`/api/health`, `/api/ready`)

@@ -3,7 +3,7 @@ import { BillingService } from '../billing.service';
 import { PaymentService } from '../payment.service';
 import { InvoiceService } from '../invoice.service';
 import { CouponService } from '../coupon.service';
-import { PaymentGatewayService } from '../providers/payment-gateway.service';
+import { PaymentGatewayService } from '../services/payment-gateway.service';
 
 describe('BillingService', () => {
   let service: BillingService;
@@ -48,14 +48,10 @@ describe('BillingService', () => {
     } as unknown as jest.Mocked<Pick<CouponService, keyof CouponService>>;
 
     gatewayService = {
-      registerProvider: jest.fn(),
-      getProvider: jest.fn(),
-      getRegisteredProviders: jest.fn(),
+      getAvailableProviders: jest.fn(),
       createCheckout: jest.fn(),
       verifyPayment: jest.fn(),
-      createSubscription: jest.fn(),
-      cancelSubscription: jest.fn(),
-      refundPayment: jest.fn(),
+      refund: jest.fn(),
       handleWebhook: jest.fn(),
     } as unknown as jest.Mocked<Pick<PaymentGatewayService, keyof PaymentGatewayService>>;
 
