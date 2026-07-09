@@ -12,4 +12,7 @@ export const validationSchema = Joi.object({
   RAZORPAY_KEY_ID: Joi.string().optional(),
   RAZORPAY_KEY_SECRET: Joi.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: Joi.string().optional(),
+  STRIPE_SECRET_KEY: Joi.string().optional(),
+  STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: Joi.string().optional(),
 });

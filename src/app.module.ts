@@ -20,12 +20,13 @@ import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
 import jwtConfig from './config/jwt.config';
 import razorpayConfig from './config/razorpay.config';
+import stripeConfig from './config/stripe.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, jwtConfig, razorpayConfig],
+      load: [appConfig, databaseConfig, redisConfig, jwtConfig, razorpayConfig, stripeConfig],
       validationSchema,
       validationOptions: {
         abortEarly: true,
