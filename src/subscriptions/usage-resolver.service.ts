@@ -12,6 +12,15 @@ export class UsageResolver {
     private readonly featureResolver: FeatureResolver,
   ) {}
 
+  async canUse(
+    organizationId: string,
+    featureSlug: string,
+    _amount = 1,
+    period?: string,
+  ): Promise<UsageCheckResult> {
+    return this.canUseFeature(organizationId, featureSlug, _amount, period);
+  }
+
   async canUseFeature(
     organizationId: string,
     featureSlug: string,

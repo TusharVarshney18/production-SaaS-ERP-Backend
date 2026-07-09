@@ -8,8 +8,12 @@ export class FeatureResolver {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getEnabledFeatures(organizationId: string): Promise<FeatureResult[]> {
+  async getFeatures(organizationId: string): Promise<FeatureResult[]> {
     return this.getOrganizationFeatures(organizationId);
+  }
+
+  async getEnabledFeatures(organizationId: string): Promise<FeatureResult[]> {
+    return this.getFeatures(organizationId);
   }
 
   async hasFeature(organizationId: string, featureSlug: string): Promise<boolean> {

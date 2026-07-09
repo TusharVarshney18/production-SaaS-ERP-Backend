@@ -6,6 +6,7 @@ import { SubscriptionLifecycleService } from './subscription-lifecycle.service';
 import { PlanResolver } from './plan-resolver.service';
 import { FeatureResolver } from './feature-resolver.service';
 import { UsageResolver } from './usage-resolver.service';
+import { EntitlementService } from './entitlement.service';
 
 @Module({
   controllers: [SubscriptionsController],
@@ -16,6 +17,7 @@ import { UsageResolver } from './usage-resolver.service';
     PlanResolver,
     FeatureResolver,
     UsageResolver,
+    EntitlementService,
   ],
   exports: [
     SubscriptionsService,
@@ -24,6 +26,7 @@ import { UsageResolver } from './usage-resolver.service';
     PlanResolver,
     FeatureResolver,
     UsageResolver,
+    EntitlementService,
   ],
 })
 export class SubscriptionsModule {}
