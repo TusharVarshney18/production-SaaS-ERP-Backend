@@ -11,6 +11,8 @@ import { OrganizationSettingsModule } from './organization-settings/organization
 import { RbacModule } from './rbac/rbac.module';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { BillingModule } from './billing/billing.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -51,6 +53,8 @@ import jwtConfig from './config/jwt.config';
     RbacModule,
     AuthorizationModule,
     AuditLogModule,
+    SubscriptionsModule,
+    BillingModule,
   ],
   providers: [
     {
