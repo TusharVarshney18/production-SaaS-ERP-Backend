@@ -15,4 +15,7 @@ export const validationSchema = Joi.object({
   STRIPE_SECRET_KEY: Joi.string().optional(),
   STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
   STRIPE_PUBLISHABLE_KEY: Joi.string().optional(),
+  SUPER_ADMIN_EMAILS: Joi.string()
+    .optional()
+    .description('Comma-separated list of super admin emails'),
 });

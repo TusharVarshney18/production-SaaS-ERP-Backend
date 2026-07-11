@@ -13,6 +13,9 @@ import { AuthorizationModule } from './authorization/authorization.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { BillingModule } from './billing/billing.module';
+import { BillingPortalModule } from './billing-portal/billing-portal.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
+import { CrmModule } from './crm/crm.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -57,6 +60,9 @@ import stripeConfig from './config/stripe.config';
     AuditLogModule,
     SubscriptionsModule,
     BillingModule,
+    BillingPortalModule,
+    SuperAdminModule,
+    CrmModule,
   ],
   providers: [
     {

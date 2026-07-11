@@ -154,6 +154,7 @@ model Organization {
   couponUsages   CouponUsage[]
   paymentMethods PaymentMethod[]
   billingAddresses BillingAddress[]
+  leads          Lead[]
 
   @@index([status])
   @@index([roleVersion])
@@ -229,6 +230,13 @@ model User {
   deletedRoles            Role[]            @relation("RoleDeletedBy")
   deletedPermissionGroups PermissionGroup[] @relation("PermissionGroupDeletedBy")
   assignedUserRoles       UserRole[]        @relation("UserRoleAssignedBy")
+  leadsOwned              Lead[]            @relation("LeadOwner")
+  leadsAssignedTo         Lead[]            @relation("LeadAssignedTo")
+  leadsDeleted            Lead[]            @relation("LeadDeletedBy")
+  leadNotes               LeadNote[]
+  leadActivities          LeadActivity[]
+  leadTimelineEntries     LeadTimeline[]
+  leadAssignmentHistories LeadAssignmentHistory[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -937,4 +945,233 @@ model SystemSetting {
   @@index([category])
   @@index([key])
   @@map("system_settings")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Lead Enums
+// ──────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+  DISQUALIFIED
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL_MEDIA
+  EMAIL
+  PHONE
+  ADVERTISEMENT
+  PARTNER
+  EVENT
+  OTHER
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  TASK
+  EMAIL
+  REMINDER
+}
+
+// ──────────────────────────────────────────────
+// CRM: Lead
+// ──────────────────────────────────────────────
+
+model Lead {
+  id              String     @id @default(uuid()) @map("id")
+  organizationId  String     @map("organization_id")
+  ownerId         String     @map("owner_id")
+  assignedToId    String?    @map("assigned_to_id")
+  companyName     String?    @map("company_name")
+  contactName     String     @map("contact_name")
+  email           String?    @map("email")
+  phone           String?    @map("phone")
+  website         String?    @map("website")
+  status          LeadStatus @default(NEW) @map("status")
+  source          LeadSource @default(OTHER) @map("source")
+  priority        LeadPriority @default(MEDIUM) @map("priority")
+  estimatedValue  Int        @default(0) @map("estimated_value")
+  expectedCloseDate DateTime? @map("expected_close_date")
+  description     String?    @map("description")
+  isArchived      Boolean    @default(false) @map("is_archived")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization        Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner               User                    @relation("LeadOwner", fields: [ownerId], references: [id])
+  assignedTo          User?                   @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+  deletedBy           User?                   @relation("LeadDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  notes               LeadNote[]
+  activities          LeadActivity[]
+  timeline            LeadTimeline[]
+  assignmentHistories LeadAssignmentHistory[]
+  tags                LeadTag[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([source])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([isArchived])
+  @@map("leads")
+}
+
+// ──────────────────────────────────────────────
+// CRM: LeadTag
+// ──────────────────────────────────────────────
+
+model LeadTag {
+  id    String @id @default(uuid()) @map("id")
+  name  String @map("name")
+  color String @default("#6366f1") @map("color")
+
+  leadId String @map("lead_id")
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_tags")
+}
+
+// ──────────────────────────────────────────────
+// CRM: LeadNote
+// ──────────────────────────────────────────────
+
+model LeadNote {
+  id      String @id @default(uuid()) @map("id")
+  content String @map("content")
+
+  leadId String @map("lead_id")
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("lead_notes")
+}
+
+// ──────────────────────────────────────────────
+// CRM: LeadActivity
+// ──────────────────────────────────────────────
+
+model LeadActivity {
+  id          String       @id @default(uuid()) @map("id")
+  type        ActivityType @map("type")
+  subject     String       @map("subject")
+  description String?      @map("description")
+  dueAt       DateTime?    @map("due_at")
+  completedAt DateTime?    @map("completed_at")
+  isCompleted Boolean      @default(false) @map("is_completed")
+
+  leadId String @map("lead_id")
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([type])
+  @@index([isCompleted])
+  @@index([dueAt])
+  @@index([deletedAt])
+  @@map("lead_activities")
+}
+
+// ──────────────────────────────────────────────
+// CRM: LeadTimeline
+// ──────────────────────────────────────────────
+
+model LeadTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  leadId String @map("lead_id")
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([leadId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("lead_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// CRM: LeadAssignmentHistory
+// ──────────────────────────────────────────────
+
+model LeadAssignmentHistory {
+  id          String   @id @default(uuid()) @map("id")
+  fromUserId  String?  @map("from_user_id")
+  toUserId    String?  @map("to_user_id")
+  reason      String?  @map("reason")
+
+  leadId String @map("lead_id")
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  assignedByUserId String @map("assigned_by_user_id")
+  assignedBy       User   @relation(fields: [assignedByUserId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([leadId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([createdAt])
+  @@map("lead_assignment_histories")
 }
