@@ -224,6 +224,15 @@ model Organization {
   vendors            Vendor[]
   purchaseOrders     PurchaseOrder[]
   goodsReceipts      GoodsReceipt[]
+  fiscalYears        FiscalYear[]
+  accountingPeriods  AccountingPeriod[]
+  chartOfAccounts    ChartOfAccount[]
+  journalEntries     JournalEntry[]
+  departments        Department[]
+  designations       Designation[]
+  employees          Employee[]
+  workflowDefinitions WorkflowDefinition[]
+  workflowExecutionLogs WorkflowExecutionLog[]
 
   @@index([status])
   @@index([roleVersion])
@@ -2680,4 +2689,435 @@ model PaymentAllocation {
   @@index([paymentId])
   @@index([invoiceId])
   @@map("payment_allocations")
+}
+
+// ──────────────────────────────────────────────
+// Accounting: Enums
+// ──────────────────────────────────────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  REVERSED
+}
+
+// ──────────────────────────────────────────────
+// Accounting: FiscalYear
+// ──────────────────────────────────────────────
+
+model FiscalYear {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  name           String   @map("name")
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  isClosed       Boolean  @default(false) @map("is_closed")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periods      AccountingPeriod[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([startDate, endDate])
+  @@map("fiscal_years")
+}
+
+// ──────────────────────────────────────────────
+// Accounting: AccountingPeriod
+// ──────────────────────────────────────────────
+
+model AccountingPeriod {
+  id             String   @id @default(uuid()) @map("id")
+  fiscalYearId   String   @map("fiscal_year_id")
+  organizationId String   @map("organization_id")
+  periodNumber   Int      @map("period_number")
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  isClosed       Boolean  @default(false) @map("is_closed")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  fiscalYear FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([fiscalYearId, periodNumber])
+  @@index([fiscalYearId])
+  @@index([organizationId])
+  @@map("accounting_periods")
+}
+
+// ──────────────────────────────────────────────
+// Accounting: ChartOfAccount
+// ──────────────────────────────────────────────
+
+model ChartOfAccount {
+  id              String      @id @default(uuid()) @map("id")
+  organizationId  String      @map("organization_id")
+  accountCode     String      @map("account_code")
+  accountName     String      @map("account_name")
+  accountType     AccountType @map("account_type")
+  parentAccountId String?     @map("parent_account_id")
+  isSystem        Boolean     @default(false) @map("is_system")
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentAccount ChartOfAccount?      @relation("AccountParent", fields: [parentAccountId], references: [id], onDelete: SetNull)
+  childAccounts ChartOfAccount[]     @relation("AccountParent")
+  journalLines  JournalEntryLine[]
+
+  @@unique([organizationId, accountCode])
+  @@index([organizationId])
+  @@index([accountType])
+  @@index([parentAccountId])
+  @@map("chart_of_accounts")
+}
+
+// ──────────────────────────────────────────────
+// Accounting: JournalEntry
+// ──────────────────────────────────────────────
+
+model JournalEntry {
+  id              String        @id @default(uuid()) @map("id")
+  organizationId  String        @map("organization_id")
+  journalNumber   String        @map("journal_number")
+  referenceType   String?       @map("reference_type")
+  referenceId     String?       @map("reference_id")
+  postingDate     DateTime      @map("posting_date")
+  description     String?       @map("description")
+  status          JournalStatus @default(DRAFT) @map("status")
+
+  // Timestamps
+  postedAt  DateTime? @map("posted_at")
+  reversedAt DateTime? @map("reversed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lines        JournalEntryLine[]
+
+  @@unique([organizationId, journalNumber])
+  @@index([organizationId])
+  @@index([referenceType, referenceId])
+  @@index([status])
+  @@index([postingDate])
+  @@map("journal_entries")
+}
+
+// ──────────────────────────────────────────────
+// Accounting: JournalEntryLine
+// ──────────────────────────────────────────────
+
+model JournalEntryLine {
+  id             String  @id @default(uuid()) @map("id")
+  journalEntryId String  @map("journal_entry_id")
+  accountId      String  @map("account_id")
+  debit          Int     @default(0) @map("debit")
+  credit         Int     @default(0) @map("credit")
+  description    String? @map("description")
+
+  // Relations
+  journalEntry JournalEntry    @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount  @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@map("journal_entry_lines")
+}
+
+// ──────────────────────────────────────────────
+// HRMS: Enums
+// ──────────────────────────────────────────────
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  ANNUAL
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ──────────────────────────────────────────────
+// HRMS: Department
+// ──────────────────────────────────────────────
+
+model Department {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  name           String   @map("name")
+  code           String   @map("code")
+  description    String?  @map("description")
+  isActive       Boolean  @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employees    Employee[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("departments")
+}
+
+// ──────────────────────────────────────────────
+// HRMS: Designation
+// ──────────────────────────────────────────────
+
+model Designation {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  name           String   @map("name")
+  code           String   @map("code")
+  level          Int      @default(0) @map("level")
+  isActive       Boolean  @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employees    Employee[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("designations")
+}
+
+// ──────────────────────────────────────────────
+// HRMS: Employee
+// ──────────────────────────────────────────────
+
+model Employee {
+  id                String           @id @default(uuid()) @map("id")
+  organizationId    String           @map("organization_id")
+  employeeCode      String           @map("employee_code")
+  firstName         String           @map("first_name")
+  lastName          String           @map("last_name")
+  email             String?          @map("email")
+  phone             String?          @map("phone")
+  departmentId      String?          @map("department_id")
+  designationId     String?          @map("designation_id")
+  joiningDate       DateTime?        @map("joining_date")
+  employmentStatus  EmploymentStatus @default(ACTIVE) @map("employment_status")
+  managerId         String?          @map("manager_id")
+  metadata          Json?            @map("metadata")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  designation    Designation?   @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  manager        Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  subordinates   Employee[]     @relation("EmployeeManager")
+  attendance     Attendance[]
+  leaveRequests  LeaveRequest[]
+
+  @@unique([organizationId, employeeCode])
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([employmentStatus])
+  @@index([managerId])
+  @@map("employees")
+}
+
+// ──────────────────────────────────────────────
+// HRMS: Attendance
+// ──────────────────────────────────────────────
+
+model Attendance {
+  id             String           @id @default(uuid()) @map("id")
+  employeeId     String           @map("employee_id")
+  organizationId String           @map("organization_id")
+  date           DateTime         @map("date")
+  checkIn        DateTime?        @map("check_in")
+  checkOut       DateTime?        @map("check_out")
+  status         AttendanceStatus @default(PRESENT) @map("status")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([organizationId])
+  @@index([date])
+  @@map("attendance_records")
+}
+
+// ──────────────────────────────────────────────
+// HRMS: LeaveRequest
+// ──────────────────────────────────────────────
+
+model LeaveRequest {
+  id             String     @id @default(uuid()) @map("id")
+  employeeId     String     @map("employee_id")
+  organizationId String     @map("organization_id")
+  leaveType      LeaveType  @map("leave_type")
+  startDate      DateTime   @map("start_date")
+  endDate        DateTime   @map("end_date")
+  reason         String?    @map("reason")
+  status         LeaveStatus @default(PENDING) @map("status")
+  approvedBy     String?    @map("approved_by")
+  rejectedBy     String?    @map("rejected_by")
+  rejectionReason String?   @map("rejection_reason")
+
+  // Timestamps
+  approvedAt  DateTime? @map("approved_at")
+  rejectedAt  DateTime? @map("rejected_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt      @map("updated_at")
+
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leave_requests")
+}
+
+// ──────────────────────────────────────────────
+// Workflow: Enums
+// ──────────────────────────────────────────────
+
+enum WorkflowActionType {
+  EMAIL
+  WEBHOOK
+  NOTIFICATION
+  AUDIT
+  AI_HOOK
+  SMS
+}
+
+enum ExecutionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// ──────────────────────────────────────────────
+// Workflow: WorkflowDefinition
+// ──────────────────────────────────────────────
+
+model WorkflowDefinition {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  name           String   @map("name")
+  event          String   @map("event")
+  conditions     Json?    @map("conditions")
+  isActive       Boolean  @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actions      WorkflowAction[]
+  executions   WorkflowExecutionLog[]
+
+  @@index([organizationId])
+  @@index([event])
+  @@index([isActive])
+  @@map("workflow_definitions")
+}
+
+// ──────────────────────────────────────────────
+// Workflow: WorkflowAction
+// ──────────────────────────────────────────────
+
+model WorkflowAction {
+  id                   String             @id @default(uuid()) @map("id")
+  workflowDefinitionId String             @map("workflow_definition_id")
+  type                 WorkflowActionType @map("type")
+  config               Json               @map("config")
+  order                Int                @default(0) @map("order")
+
+  // Relations
+  workflowDefinition WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([workflowDefinitionId])
+  @@map("workflow_actions")
+}
+
+// ──────────────────────────────────────────────
+// Workflow: WorkflowExecutionLog
+// ──────────────────────────────────────────────
+
+model WorkflowExecutionLog {
+  id                   String          @id @default(uuid()) @map("id")
+  organizationId       String          @map("organization_id")
+  workflowDefinitionId String          @map("workflow_definition_id")
+  event                String          @map("event")
+  eventPayload         Json?           @map("event_payload")
+  status               ExecutionStatus @default(PENDING) @map("status")
+  result               Json?           @map("result")
+  errorMessage         String?         @map("error_message")
+  triggeredAt          DateTime        @default(now()) @map("triggered_at")
+  completedAt          DateTime?       @map("completed_at")
+
+  // Relations
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflowDefinition WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id])
+
+  @@index([organizationId])
+  @@index([workflowDefinitionId])
+  @@index([event])
+  @@index([status])
+  @@index([triggeredAt])
+  @@map("workflow_execution_logs")
 }

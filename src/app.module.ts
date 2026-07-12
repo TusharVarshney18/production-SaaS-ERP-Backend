@@ -26,6 +26,10 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { PaymentsModule } from './payments/payments.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { ProcurementModule } from './procurement/procurement.module';
+import { AccountingModule } from './accounting/accounting.module';
+import { HrmsModule } from './hrms/hrms.module';
+import { ReportsModule } from './reports/reports.module';
+import { WorkflowsModule } from './workflows/workflows.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -83,6 +87,10 @@ import stripeConfig from './config/stripe.config';
     PaymentsModule,
     InventoryModule,
     ProcurementModule,
+    AccountingModule,
+    HrmsModule,
+    ReportsModule,
+    WorkflowsModule,
   ],
   providers: [
     {
