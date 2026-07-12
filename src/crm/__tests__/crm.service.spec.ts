@@ -215,4 +215,129 @@ describe('CrmService', () => {
       expect(result).toHaveLength(1);
     });
   });
+
+  // ─── Companies ───────────────────────────
+
+  const mockCompany = {
+    id: 'comp-1',
+    organizationId: 'org-1',
+    ownerId: 'user-1',
+    name: 'Acme Corp',
+    industry: 'Technology',
+    isArchived: false,
+    deletedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  describe('createCompany', () => {
+    it('should create a company with timeline and audit log', async () => {
+      (prisma.company.create as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.companyTimeline.create as jest.Mock).mockResolvedValue({});
+      (auditLog.create as jest.Mock).mockResolvedValue({});
+
+      const result = await service.createCompany('org-1', { name: 'Acme Corp' }, 'user-1', 'req-1');
+      expect(result.name).toBe('Acme Corp');
+    });
+  });
+
+  describe('findAllCompanies', () => {
+    it('should return paginated companies', async () => {
+      (prisma.company.findMany as jest.Mock).mockResolvedValue([mockCompany]);
+      (prisma.company.count as jest.Mock).mockResolvedValue(1);
+      const result = await service.findAllCompanies('org-1', {});
+      expect(result.data).toHaveLength(1);
+    });
+  });
+
+  describe('findOneCompany', () => {
+    it('should return company with relations', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue({
+        ...mockCompany,
+        leads: [],
+        notes: [],
+        activities: [],
+        timeline: [],
+      });
+      const result = await service.findOneCompany('org-1', 'comp-1');
+      expect(result.id).toBe('comp-1');
+    });
+
+    it('should throw NotFoundException for wrong org', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(service.findOneCompany('org-2', 'comp-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('archiveCompany', () => {
+    it('should archive company', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.company.update as jest.Mock).mockResolvedValue({ ...mockCompany, isArchived: true });
+      (prisma.companyTimeline.create as jest.Mock).mockResolvedValue({});
+      const result = await service.archiveCompany('org-1', 'comp-1', 'user-1', 'req-1');
+      expect(result.isArchived).toBe(true);
+    });
+  });
+
+  describe('deleteCompany', () => {
+    it('should soft delete company', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.company.update as jest.Mock).mockResolvedValue(mockCompany);
+      const result = await service.deleteCompany('org-1', 'comp-1', 'user-1', 'req-1');
+      expect(result.message).toContain('deleted');
+    });
+  });
+
+  describe('createCompanyNote', () => {
+    it('should create note with timeline', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.companyNote.create as jest.Mock).mockResolvedValue({
+        id: 'n-1',
+        content: 'Test note',
+        user: {},
+      });
+      (prisma.companyTimeline.create as jest.Mock).mockResolvedValue({});
+      const result = await service.createCompanyNote(
+        'org-1',
+        'comp-1',
+        'Test note',
+        'user-1',
+        'req-1',
+      );
+      expect(result.content).toBe('Test note');
+    });
+  });
+
+  describe('createCompanyActivity', () => {
+    it('should create activity with timeline', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.companyActivity.create as jest.Mock).mockResolvedValue({
+        id: 'a-1',
+        type: 'CALL',
+        subject: 'Call',
+        user: {},
+      });
+      (prisma.companyTimeline.create as jest.Mock).mockResolvedValue({});
+      const result = await service.createCompanyActivity(
+        'org-1',
+        'comp-1',
+        { type: 'CALL', subject: 'Call' },
+        'user-1',
+        'req-1',
+      );
+      expect(result.subject).toBe('Call');
+    });
+  });
+
+  describe('getCompanyTimeline', () => {
+    it('should return paginated timeline', async () => {
+      (prisma.company.findFirst as jest.Mock).mockResolvedValue(mockCompany);
+      (prisma.companyTimeline.findMany as jest.Mock).mockResolvedValue([
+        { id: 't-1', event: 'company.created' },
+      ]);
+      (prisma.companyTimeline.count as jest.Mock).mockResolvedValue(1);
+      const result = await service.getCompanyTimeline('org-1', 'comp-1');
+      expect(result.data).toHaveLength(1);
+    });
+  });
 });

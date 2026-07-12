@@ -16,6 +16,14 @@ import { BillingModule } from './billing/billing.module';
 import { BillingPortalModule } from './billing-portal/billing-portal.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
 import { CrmModule } from './crm/crm.module';
+import { ContactsModule } from './contacts/contacts.module';
+import { DealsModule } from './deals/deals.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { ProductsModule } from './products/products.module';
+import { SalesModule } from './sales/sales.module';
+import { SalesOrdersModule } from './sales/orders/sales-orders.module';
+import { InvoicesModule } from './invoices/invoices.module';
+import { PaymentsModule } from './payments/payments.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -63,6 +71,14 @@ import stripeConfig from './config/stripe.config';
     BillingPortalModule,
     SuperAdminModule,
     CrmModule,
+    ContactsModule,
+    DealsModule,
+    ActivitiesModule,
+    ProductsModule,
+    SalesModule,
+    SalesOrdersModule,
+    InvoicesModule,
+    PaymentsModule,
   ],
   providers: [
     {

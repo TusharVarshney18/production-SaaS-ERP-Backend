@@ -24,6 +24,9 @@ import { CreateLeadNoteDto } from './dto/create-lead-note.dto';
 import { UpdateLeadNoteDto } from './dto/update-lead-note.dto';
 import { CreateLeadActivityDto } from './dto/create-lead-activity.dto';
 import { AssignLeadDto } from './dto/assign-lead.dto';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
 
 @ApiTags('CRM')
 @ApiBearerAuth()
@@ -240,5 +243,162 @@ export class CrmController {
   @ApiOperation({ summary: 'Get lead assignment history' })
   getAssignmentHistory(@Param('orgId') orgId: string, @Param('leadId') leadId: string) {
     return this.crm.getAssignmentHistory(orgId, leadId);
+  }
+
+  // ─── Companies ───────────────────────────
+
+  @Post('companies')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:create')
+  @ApiOperation({ summary: 'Create a new company' })
+  createCompany(
+    @Param('orgId') orgId: string,
+    @Body() dto: CreateCompanyDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.createCompany(orgId, dto, user.sub, req.requestId);
+  }
+
+  @Get('companies')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:read')
+  @ApiOperation({ summary: 'List companies with search, filter, pagination' })
+  findAllCompanies(@Param('orgId') orgId: string, @Query() query: CompanyQueryDto) {
+    return this.crm.findAllCompanies(orgId, query);
+  }
+
+  @Get('companies/:id')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:read')
+  @ApiOperation({ summary: 'Get company details with leads, notes, activities, timeline' })
+  findOneCompany(@Param('orgId') orgId: string, @Param('id') id: string) {
+    return this.crm.findOneCompany(orgId, id);
+  }
+
+  @Patch('companies/:id')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:update')
+  @ApiOperation({ summary: 'Update company' })
+  updateCompany(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.updateCompany(orgId, id, dto, user.sub, req.requestId);
+  }
+
+  @Post('companies/:id/archive')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:update')
+  @ApiOperation({ summary: 'Archive company' })
+  archiveCompany(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.archiveCompany(orgId, id, user.sub, req.requestId);
+  }
+
+  @Post('companies/:id/restore')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:update')
+  @ApiOperation({ summary: 'Restore company from archive' })
+  restoreCompany(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.restoreCompany(orgId, id, user.sub, req.requestId);
+  }
+
+  @Delete('companies/:id')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:delete')
+  @ApiOperation({ summary: 'Soft delete company' })
+  deleteCompany(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.deleteCompany(orgId, id, user.sub, req.requestId);
+  }
+
+  // ─── Company Notes ───────────────────────
+
+  @Get('companies/:companyId/notes')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:read')
+  @ApiOperation({ summary: 'List company notes' })
+  listCompanyNotes(
+    @Param('orgId') orgId: string,
+    @Param('companyId') companyId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.crm.listCompanyNotes(orgId, companyId, page, limit);
+  }
+
+  @Post('companies/:companyId/notes')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:update')
+  @ApiOperation({ summary: 'Add note to company' })
+  createCompanyNote(
+    @Param('orgId') orgId: string,
+    @Param('companyId') companyId: string,
+    @Body('content') content: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.createCompanyNote(orgId, companyId, content, user.sub, req.requestId);
+  }
+
+  // ─── Company Activities ─────────────────
+
+  @Get('companies/:companyId/activities')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:read')
+  @ApiOperation({ summary: 'List company activities' })
+  listCompanyActivities(
+    @Param('orgId') orgId: string,
+    @Param('companyId') companyId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.crm.listCompanyActivities(orgId, companyId, page, limit);
+  }
+
+  @Post('companies/:companyId/activities')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:update')
+  @ApiOperation({ summary: 'Create activity on company' })
+  createCompanyActivity(
+    @Param('orgId') orgId: string,
+    @Param('companyId') companyId: string,
+    @Body() dto: CreateLeadActivityDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: { requestId: string },
+  ) {
+    return this.crm.createCompanyActivity(orgId, companyId, dto, user.sub, req.requestId);
+  }
+
+  // ─── Company Timeline ────────────────────
+
+  @Get('companies/:companyId/timeline')
+  @UseGuards(PermissionGuard)
+  @Permissions('company:read')
+  @ApiOperation({ summary: 'Get company timeline' })
+  getCompanyTimeline(
+    @Param('orgId') orgId: string,
+    @Param('companyId') companyId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.crm.getCompanyTimeline(orgId, companyId, page, limit);
   }
 }

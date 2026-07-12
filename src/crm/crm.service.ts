@@ -9,6 +9,9 @@ import { CreateLeadNoteDto } from './dto/create-lead-note.dto';
 import { UpdateLeadNoteDto } from './dto/update-lead-note.dto';
 import { CreateLeadActivityDto } from './dto/create-lead-activity.dto';
 import { AssignLeadDto } from './dto/assign-lead.dto';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
 
 @Injectable()
 export class CrmService {
@@ -490,5 +493,380 @@ export class CrmService {
         assignedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
       },
     });
+  }
+
+  // ─── Company Helpers ─────────────────────
+
+  private async recordCompanyTimeline(
+    companyId: string,
+    event: string,
+    description: string,
+    details: Record<string, unknown>,
+    userId?: string,
+  ) {
+    await this.prisma.companyTimeline.create({
+      data: {
+        companyId,
+        event,
+        description,
+        details: details as Prisma.InputJsonValue,
+        userId: userId || null,
+      },
+    });
+  }
+
+  private async logCompany(
+    orgId: string,
+    actorId: string,
+    event: string,
+    action: string,
+    resourceId: string,
+    details: Record<string, unknown>,
+    requestId: string,
+  ) {
+    await this.auditLog.create({
+      organizationId: orgId,
+      actorId,
+      actorType: 'USER',
+      event,
+      resource: 'company',
+      resourceId,
+      action,
+      details,
+      requestId,
+      severity: 'INFO',
+    });
+  }
+
+  // ─── Companies ───────────────────────────
+
+  async createCompany(orgId: string, dto: CreateCompanyDto, userId: string, requestId: string) {
+    const company = await this.prisma.company.create({
+      data: {
+        organizationId: orgId,
+        ownerId: userId,
+        name: dto.name,
+        legalName: dto.legalName || null,
+        gstNumber: dto.gstNumber || null,
+        taxNumber: dto.taxNumber || null,
+        registrationNumber: dto.registrationNumber || null,
+        industry: dto.industry || null,
+        companySize: dto.companySize ?? null,
+        annualRevenue: dto.annualRevenue ?? null,
+        website: dto.website || null,
+        email: dto.email || null,
+        phone: dto.phone || null,
+        logo: dto.logo || null,
+        description: dto.description || null,
+        billingAddress: dto.billingAddress || null,
+        shippingAddress: dto.shippingAddress || null,
+        city: dto.city || null,
+        state: dto.state || null,
+        country: dto.country || null,
+        postalCode: dto.postalCode || null,
+        timezone: dto.timezone || 'UTC',
+        currency: dto.currency || 'USD',
+        isCustomer: dto.isCustomer ?? false,
+        isVendor: dto.isVendor ?? false,
+      },
+    });
+
+    await this.recordCompanyTimeline(
+      company.id,
+      'company.created',
+      `Company created: ${company.name}`,
+      { companyId: company.id },
+      userId,
+    );
+    await this.logCompany(
+      orgId,
+      userId,
+      'company.created',
+      'CREATE',
+      company.id,
+      { name: company.name },
+      requestId,
+    );
+    return company;
+  }
+
+  async findAllCompanies(orgId: string, query: CompanyQueryDto) {
+    const {
+      search,
+      industry,
+      ownerId,
+      isCustomer,
+      isVendor,
+      isArchived,
+      country,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
+
+    const where: Record<string, unknown> = { organizationId: orgId, deletedAt: null };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { legalName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (industry) where.industry = industry;
+    if (ownerId) where.ownerId = ownerId;
+    if (isCustomer !== undefined) where.isCustomer = isCustomer;
+    if (isVendor !== undefined) where.isVendor = isVendor;
+    if (isArchived !== undefined) where.isArchived = isArchived;
+    if (country) where.country = country;
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          owner: { select: { id: true, email: true, firstName: true, lastName: true } },
+          _count: {
+            select: { leads: true, notes: true, activities: { where: { deletedAt: null } } },
+          },
+        },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async findOneCompany(orgId: string, id: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { id, organizationId: orgId, deletedAt: null },
+      include: {
+        owner: { select: { id: true, email: true, firstName: true, lastName: true } },
+        leads: {
+          where: { deletedAt: null },
+          include: { tags: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+        notes: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+        },
+        activities: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+        },
+        timeline: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async updateCompany(
+    orgId: string,
+    id: string,
+    dto: UpdateCompanyDto,
+    userId: string,
+    requestId: string,
+  ) {
+    await this.findOneCompany(orgId, id);
+
+    const data: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(dto)) {
+      if (value !== undefined) data[key] = value;
+    }
+
+    const company = await this.prisma.company.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(dto.companySize !== undefined && { companySize: dto.companySize }),
+        ...(dto.annualRevenue !== undefined && { annualRevenue: dto.annualRevenue }),
+      },
+    });
+
+    await this.recordCompanyTimeline(
+      id,
+      'company.updated',
+      `Company updated: ${company.name}`,
+      {},
+      userId,
+    );
+    await this.logCompany(
+      orgId,
+      userId,
+      'company.updated',
+      'UPDATE',
+      id,
+      { changes: Object.keys(data) },
+      requestId,
+    );
+    return company;
+  }
+
+  async archiveCompany(orgId: string, id: string, userId: string, requestId: string) {
+    await this.findOneCompany(orgId, id);
+    const company = await this.prisma.company.update({ where: { id }, data: { isArchived: true } });
+    await this.recordCompanyTimeline(id, 'company.archived', 'Company archived', {}, userId);
+    await this.logCompany(orgId, userId, 'company.archived', 'UPDATE', id, {}, requestId);
+    return company;
+  }
+
+  async restoreCompany(orgId: string, id: string, userId: string, requestId: string) {
+    await this.findOneCompany(orgId, id);
+    const company = await this.prisma.company.update({
+      where: { id },
+      data: { isArchived: false },
+    });
+    await this.recordCompanyTimeline(
+      id,
+      'company.restored',
+      'Company restored from archive',
+      {},
+      userId,
+    );
+    await this.logCompany(orgId, userId, 'company.restored', 'UPDATE', id, {}, requestId);
+    return company;
+  }
+
+  async deleteCompany(orgId: string, id: string, userId: string, requestId: string) {
+    await this.findOneCompany(orgId, id);
+    await this.prisma.company.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedByUserId: userId, deletedReason: 'User deleted' },
+    });
+    await this.logCompany(orgId, userId, 'company.deleted', 'DELETE', id, {}, requestId);
+    return { message: 'Company deleted' };
+  }
+
+  // ─── Company Notes ───────────────────────
+
+  async createCompanyNote(
+    orgId: string,
+    companyId: string,
+    content: string,
+    userId: string,
+    requestId: string,
+  ) {
+    await this.findOneCompany(orgId, companyId);
+    const note = await this.prisma.companyNote.create({
+      data: { companyId, content, userId },
+      include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    });
+    await this.recordCompanyTimeline(
+      companyId,
+      'note.added',
+      'Note added',
+      { noteId: note.id },
+      userId,
+    );
+    await this.logCompany(
+      orgId,
+      userId,
+      'company.note.created',
+      'CREATE',
+      companyId,
+      { noteId: note.id },
+      requestId,
+    );
+    return note;
+  }
+
+  async listCompanyNotes(orgId: string, companyId: string, page = 1, limit = 50) {
+    await this.findOneCompany(orgId, companyId);
+    const where = { companyId, deletedAt: null };
+    const [data, total] = await Promise.all([
+      this.prisma.companyNote.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      }),
+      this.prisma.companyNote.count({ where }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  // ─── Company Activities ─────────────────
+
+  async createCompanyActivity(
+    orgId: string,
+    companyId: string,
+    dto: CreateLeadActivityDto,
+    userId: string,
+    requestId: string,
+  ) {
+    await this.findOneCompany(orgId, companyId);
+    const activity = await this.prisma.companyActivity.create({
+      data: {
+        companyId,
+        type: dto.type as never,
+        subject: dto.subject,
+        description: dto.description || null,
+        dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
+        isCompleted: dto.isCompleted ?? false,
+        userId,
+      },
+      include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    });
+    await this.recordCompanyTimeline(
+      companyId,
+      'activity.created',
+      `Activity created: ${dto.type} - ${dto.subject}`,
+      { activityId: activity.id, type: dto.type },
+      userId,
+    );
+    await this.logCompany(
+      orgId,
+      userId,
+      'company.activity.created',
+      'CREATE',
+      companyId,
+      { activityId: activity.id, type: dto.type },
+      requestId,
+    );
+    return activity;
+  }
+
+  async listCompanyActivities(orgId: string, companyId: string, page = 1, limit = 50) {
+    await this.findOneCompany(orgId, companyId);
+    const where = { companyId, deletedAt: null };
+    const [data, total] = await Promise.all([
+      this.prisma.companyActivity.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      }),
+      this.prisma.companyActivity.count({ where }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  // ─── Company Timeline ────────────────────
+
+  async getCompanyTimeline(orgId: string, companyId: string, page = 1, limit = 50) {
+    await this.findOneCompany(orgId, companyId);
+    const where = { companyId };
+    const [data, total] = await Promise.all([
+      this.prisma.companyTimeline.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      }),
+      this.prisma.companyTimeline.count({ where }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 }

@@ -113,6 +113,56 @@ enum WebhookEventStatus {
   FAILED
 }
 
+enum QuotationStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  PROCESSING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+}
+
+enum SalesInvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+enum InvoicePaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  REFUNDED
+}
+
+enum PaymentGatewayType {
+  RAZORPAY
+  STRIPE
+  MANUAL
+}
+
+enum SalesPaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
 // ──────────────────────────────────────────────
 // Organization (Tenant)
 // ──────────────────────────────────────────────
@@ -155,6 +205,18 @@ model Organization {
   paymentMethods PaymentMethod[]
   billingAddresses BillingAddress[]
   leads          Lead[]
+  companies      Company[]
+  contacts       Contact[]
+  pipelines      Pipeline[]
+  deals          Deal[]
+  activities     Activity[]
+  categories     Category[]
+  units          Unit[]
+  products       Product[]
+  quotations     Quotation[]
+  salesOrders    SalesOrder[]
+  salesInvoices  SalesInvoice[]
+  salesPayments  SalesPayment[]
 
   @@index([status])
   @@index([roleVersion])
@@ -237,6 +299,28 @@ model User {
   leadActivities          LeadActivity[]
   leadTimelineEntries     LeadTimeline[]
   leadAssignmentHistories LeadAssignmentHistory[]
+  companiesOwned          Company[]         @relation("CompanyOwner")
+  companyNotes            CompanyNote[]
+  companyActivities       CompanyActivity[]
+  companyTimelineEntries  CompanyTimeline[]
+  contactsOwned           Contact[]         @relation("ContactOwner")
+  contactsTimelineEntries ContactTimeline[]
+  dealsOwned              Deal[]            @relation("DealOwner")
+  dealsDeleted            Deal[]            @relation("DealDeletedBy")
+  dealTimelineEntries     DealTimeline[]
+  activitiesOwned         Activity[]        @relation("ActivityOwner")
+  activitiesAssignedTo    Activity[]        @relation("ActivityAssignedTo")
+  activitiesDeleted       Activity[]        @relation("ActivityDeletedBy")
+  activityTimelineEntries ActivityTimeline[]
+  quotationsOwned          Quotation[]   @relation("QuotationOwner")
+  quotationsDeleted        Quotation[]   @relation("QuotationDeletedBy")
+  quotationTimelineEntries QuotationTimeline[]
+  salesOrdersOwned         SalesOrder[]   @relation("SalesOrderOwner")
+  salesOrdersDeleted       SalesOrder[]   @relation("SalesOrderDeletedBy")
+  salesOrderTimelineEntries SalesOrderTimeline[]
+  invoicesOwned             SalesInvoice[]   @relation("SalesInvoiceOwner")
+  invoicesDeleted           SalesInvoice[]   @relation("SalesInvoiceDeletedBy")
+  invoiceTimelineEntries    SalesInvoiceTimeline[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -987,6 +1071,39 @@ enum ActivityType {
   TASK
   EMAIL
   REMINDER
+  NOTE
+  FOLLOW_UP
+}
+
+enum ActivityStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+  ARCHIVED
 }
 
 // ──────────────────────────────────────────────
@@ -1030,6 +1147,9 @@ model Lead {
   timeline            LeadTimeline[]
   assignmentHistories LeadAssignmentHistory[]
   tags                LeadTag[]
+  companyId           String?   @map("company_id")
+  company             Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals               Deal[]    @relation("LeadDeals")
 
   @@index([organizationId])
   @@index([ownerId])
@@ -1174,4 +1294,994 @@ model LeadAssignmentHistory {
   @@index([toUserId])
   @@index([createdAt])
   @@map("lead_assignment_histories")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Company
+// ──────────────────────────────────────────────
+
+model Company {
+  id                 String   @id @default(uuid()) @map("id")
+  organizationId     String   @map("organization_id")
+  ownerId            String   @map("owner_id")
+  name               String   @map("name")
+  legalName          String?  @map("legal_name")
+  gstNumber          String?  @map("gst_number")
+  taxNumber          String?  @map("tax_number")
+  registrationNumber String?  @map("registration_number")
+  industry           String?  @map("industry")
+  companySize        Int?     @map("company_size")
+  annualRevenue      Int?     @map("annual_revenue")
+  website            String?  @map("website")
+  email              String?  @map("email")
+  phone              String?  @map("phone")
+  logo               String?  @map("logo")
+  description        String?  @map("description")
+  billingAddress     String?  @map("billing_address")
+  shippingAddress    String?  @map("shipping_address")
+  city               String?  @map("city")
+  state              String?  @map("state")
+  country            String?  @map("country")
+  postalCode         String?  @map("postal_code")
+  timezone           String   @default("UTC") @map("timezone")
+  currency           String   @default("USD") @map("currency")
+  isCustomer         Boolean  @default(false) @map("is_customer")
+  isVendor           Boolean  @default(false) @map("is_vendor")
+  isArchived         Boolean  @default(false) @map("is_archived")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User         @relation("CompanyOwner", fields: [ownerId], references: [id])
+  leads        Lead[]
+  contacts     Contact[]
+  deals        Deal[]
+  notes        CompanyNote[]
+  activities   CompanyActivity[]
+  timeline     CompanyTimeline[]
+  quotations   Quotation[]
+  salesOrders  SalesOrder[]
+  salesInvoices SalesInvoice[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([industry])
+  @@index([country])
+  @@index([isCustomer])
+  @@index([isVendor])
+  @@index([isArchived])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@map("companies")
+}
+
+// ──────────────────────────────────────────────
+// CRM: CompanyNote
+// ──────────────────────────────────────────────
+
+model CompanyNote {
+  id      String @id @default(uuid()) @map("id")
+  content String @map("content")
+
+  companyId String @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("company_notes")
+}
+
+// ──────────────────────────────────────────────
+// CRM: CompanyActivity
+// ──────────────────────────────────────────────
+
+model CompanyActivity {
+  id          String       @id @default(uuid()) @map("id")
+  type        ActivityType @map("type")
+  subject     String       @map("subject")
+  description String?      @map("description")
+  dueAt       DateTime?    @map("due_at")
+  completedAt DateTime?    @map("completed_at")
+  isCompleted Boolean      @default(false) @map("is_completed")
+
+  companyId String @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([type])
+  @@index([isCompleted])
+  @@index([dueAt])
+  @@index([deletedAt])
+  @@map("company_activities")
+}
+
+// ──────────────────────────────────────────────
+// CRM: CompanyTimeline
+// ──────────────────────────────────────────────
+
+model CompanyTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  companyId String @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("company_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Contact
+// ──────────────────────────────────────────────
+
+model Contact {
+  id                String        @id @default(uuid()) @map("id")
+  organizationId    String        @map("organization_id")
+  companyId         String?       @map("company_id")
+  ownerId           String        @map("owner_id")
+  firstName         String        @map("first_name")
+  lastName          String        @map("last_name")
+  fullName          String        @map("full_name")
+  designation       String?       @map("designation")
+  department        String?       @map("department")
+  email             String?       @map("email")
+  phone             String?       @map("phone")
+  mobile            String?       @map("mobile")
+  whatsapp          String?       @map("whatsapp")
+  linkedin          String?       @map("linkedin")
+  website           String?       @map("website")
+  birthday          DateTime?     @map("birthday")
+  preferredLanguage String?       @map("preferred_language")
+  timezone          String        @default("UTC") @map("timezone")
+  status            ContactStatus @default(ACTIVE) @map("status")
+  isPrimary         Boolean       @default(false) @map("is_primary")
+  isDecisionMaker   Boolean       @default(false) @map("is_decision_maker")
+  notes             String?       @map("notes")
+  avatar            String?       @map("avatar")
+  isArchived        Boolean       @default(false) @map("is_archived")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  company      Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  owner        User         @relation("ContactOwner", fields: [ownerId], references: [id])
+  timeline     ContactTimeline[]
+  dealsAsPrimary Deal[]     @relation("DealPrimaryContact")
+  quotations     Quotation[]
+  salesOrders    SalesOrder[]
+  salesInvoices  SalesInvoice[]
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([email])
+  @@index([fullName])
+  @@index([status])
+  @@index([isPrimary])
+  @@index([isDecisionMaker])
+  @@index([isArchived])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@map("contacts")
+}
+
+// ──────────────────────────────────────────────
+// CRM: ContactTimeline
+// ──────────────────────────────────────────────
+
+model ContactTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  contactId String @map("contact_id")
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([contactId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("contact_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Pipeline
+// ──────────────────────────────────────────────
+
+model Pipeline {
+  id              String   @id @default(uuid()) @map("id")
+  organizationId  String   @map("organization_id")
+  name            String   @map("name")
+  isDefault       Boolean  @default(false) @map("is_default")
+  displayOrder    Int      @default(0) @map("display_order")
+  isArchived      Boolean  @default(false) @map("is_archived")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stages       PipelineStage[]
+  deals        Deal[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([isDefault])
+  @@index([displayOrder])
+  @@map("pipelines")
+}
+
+// ──────────────────────────────────────────────
+// CRM: PipelineStage
+// ──────────────────────────────────────────────
+
+model PipelineStage {
+  id           String  @id @default(uuid()) @map("id")
+  pipelineId   String  @map("pipeline_id")
+  name         String  @map("name")
+  probability  Int     @default(0) @map("probability")
+  displayOrder Int     @default(0) @map("display_order")
+  color        String  @default("#6366f1") @map("color")
+  isWon        Boolean @default(false) @map("is_won")
+  isLost       Boolean @default(false) @map("is_lost")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+
+  @@unique([pipelineId, name])
+  @@index([pipelineId])
+  @@index([displayOrder])
+  @@map("pipeline_stages")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Deal
+// ──────────────────────────────────────────────
+
+model Deal {
+  id                String     @id @default(uuid()) @map("id")
+  organizationId    String     @map("organization_id")
+  pipelineId        String     @map("pipeline_id")
+  stageId           String     @map("stage_id")
+  companyId         String?    @map("company_id")
+  primaryContactId  String?    @map("primary_contact_id")
+  leadId            String?    @map("lead_id")
+  ownerId           String     @map("owner_id")
+  title             String     @map("title")
+  description       String?    @map("description")
+  value             Int        @default(0) @map("value")
+  currency          String     @default("USD") @map("currency")
+  probability       Int        @default(0) @map("probability")
+  expectedCloseDate DateTime?  @map("expected_close_date")
+  actualCloseDate   DateTime?  @map("actual_close_date")
+  status            DealStatus @default(OPEN) @map("status")
+  lossReason        String?    @map("loss_reason")
+  wonReason         String?    @map("won_reason")
+  isArchived        Boolean    @default(false) @map("is_archived")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pipeline        Pipeline       @relation(fields: [pipelineId], references: [id])
+  stage           PipelineStage  @relation(fields: [stageId], references: [id])
+  company         Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  primaryContact  Contact?       @relation("DealPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+  lead            Lead?          @relation("LeadDeals", fields: [leadId], references: [id], onDelete: SetNull)
+  owner           User           @relation("DealOwner", fields: [ownerId], references: [id])
+  deletedBy       User?          @relation("DealDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  timeline        DealTimeline[]
+  quotations      Quotation[]
+  salesOrders     SalesOrder[]
+
+  @@index([organizationId])
+  @@index([pipelineId])
+  @@index([stageId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([expectedCloseDate])
+  @@index([deletedAt])
+  @@map("deals")
+}
+
+// ──────────────────────────────────────────────
+// CRM: DealTimeline
+// ──────────────────────────────────────────────
+
+model DealTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  dealId String @map("deal_id")
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([dealId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("deal_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// CRM: Shared Activity (polymorphic)
+// ──────────────────────────────────────────────
+
+model Activity {
+  id              String           @id @default(uuid()) @map("id")
+  organizationId  String           @map("organization_id")
+  entityType      String           @map("entity_type")
+  entityId        String           @map("entity_id")
+  ownerId         String           @map("owner_id")
+  assignedToId    String?          @map("assigned_to_id")
+  type            ActivityType     @map("type")
+  title           String           @map("title")
+  description     String?          @map("description")
+  status          ActivityStatus   @default(PENDING) @map("status")
+  priority        ActivityPriority @default(MEDIUM) @map("priority")
+  dueDate         DateTime?        @map("due_date")
+  completedAt     DateTime?        @map("completed_at")
+  isArchived      Boolean          @default(false) @map("is_archived")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User         @relation("ActivityOwner", fields: [ownerId], references: [id])
+  assignedTo   User?        @relation("ActivityAssignedTo", fields: [assignedToId], references: [id])
+  deletedBy    User?        @relation("ActivityDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  timeline     ActivityTimeline[]
+
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([ownerId])
+  @@index([assignedToId])
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([deletedAt])
+  @@map("activities")
+}
+
+// ──────────────────────────────────────────────
+// CRM: ActivityTimeline
+// ──────────────────────────────────────────────
+
+model ActivityTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  activityId String @map("activity_id")
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([activityId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("activity_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// Inventory: Category
+// ──────────────────────────────────────────────
+
+model Category {
+  id                String     @id @default(uuid()) @map("id")
+  organizationId    String     @map("organization_id")
+  name              String     @map("name")
+  description       String?    @map("description")
+  parentCategoryId  String?    @map("parent_category_id")
+  displayOrder      Int        @default(0) @map("display_order")
+  isArchived        Boolean    @default(false) @map("is_archived")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       Category?    @relation("CategoryParent", fields: [parentCategoryId], references: [id], onDelete: SetNull)
+  children     Category[]   @relation("CategoryParent")
+  products     Product[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([parentCategoryId])
+  @@index([displayOrder])
+  @@map("categories")
+}
+
+// ──────────────────────────────────────────────
+// Inventory: Unit
+// ──────────────────────────────────────────────
+
+model Unit {
+  id             String   @id @default(uuid()) @map("id")
+  organizationId String   @map("organization_id")
+  name           String   @map("name")
+  shortName      String   @map("short_name")
+  precision      Int      @default(0) @map("precision")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products     Product[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("units")
+}
+
+// ──────────────────────────────────────────────
+// Inventory: Product
+// ──────────────────────────────────────────────
+
+model Product {
+  id              String        @id @default(uuid()) @map("id")
+  organizationId  String        @map("organization_id")
+  sku             String        @map("sku")
+  barcode         String?       @map("barcode")
+  name            String        @map("name")
+  description     String?       @map("description")
+  categoryId      String?       @map("category_id")
+  unitId          String?       @map("unit_id")
+  sellingPrice    Int           @default(0) @map("selling_price")
+  purchasePrice   Int           @default(0) @map("purchase_price")
+  taxRate         Int           @default(0) @map("tax_rate")
+  currency        String        @default("USD") @map("currency")
+  status          ProductStatus @default(ACTIVE) @map("status")
+  isService       Boolean       @default(false) @map("is_service")
+  trackInventory  Boolean       @default(false) @map("track_inventory")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  unit         Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  quotationItems     QuotationItem[]
+  salesOrderItems    SalesOrderItem[]
+  invoiceItems       SalesInvoiceItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([unitId])
+  @@index([status])
+  @@index([sku])
+  @@index([barcode])
+  @@index([deletedAt])
+  @@map("products")
+}
+
+// ──────────────────────────────────────────────
+// Sales: Quotation
+// ──────────────────────────────────────────────
+
+model Quotation {
+  id            String          @id @default(uuid()) @map("id")
+  organizationId String         @map("organization_id")
+  quotationNumber String        @map("quotation_number")
+  companyId      String         @map("company_id")
+  contactId      String         @map("contact_id")
+  dealId         String?        @map("deal_id")
+  ownerId        String         @map("owner_id")
+
+  issueDate      DateTime       @map("issue_date")
+  expiryDate     DateTime       @map("expiry_date")
+
+  currency       String         @default("USD") @map("currency")
+  exchangeRate   Int            @default(1) @map("exchange_rate")
+
+  subtotal       Int            @default(0) @map("subtotal")
+  discountType   DiscountType?  @map("discount_type")
+  discountValue  Int            @default(0) @map("discount_value")
+  discountAmount Int            @default(0) @map("discount_amount")
+
+  taxAmount      Int            @default(0) @map("tax_amount")
+  shippingAmount Int            @default(0) @map("shipping_amount")
+  grandTotal     Int            @default(0) @map("grand_total")
+
+  status         QuotationStatus @default(DRAFT) @map("status")
+
+  notes          String?        @map("notes")
+  termsAndConditions String?    @map("terms_and_conditions")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  company      Company      @relation(fields: [companyId], references: [id])
+  contact      Contact      @relation(fields: [contactId], references: [id])
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  owner        User         @relation("QuotationOwner", fields: [ownerId], references: [id])
+  deletedBy    User?        @relation("QuotationDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  items       QuotationItem[]
+  timeline    QuotationTimeline[]
+  salesOrders SalesOrder[]
+  invoices    SalesInvoice[]
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([quotationNumber])
+  @@index([issueDate])
+  @@index([expiryDate])
+  @@index([deletedAt])
+  @@map("quotations")
+}
+
+// ──────────────────────────────────────────────
+// Sales: QuotationItem
+// ──────────────────────────────────────────────
+
+model QuotationItem {
+  id          String @id @default(uuid()) @map("id")
+  quotationId String @map("quotation_id")
+  productId   String @map("product_id")
+
+  description String? @map("description")
+  quantity    Int     @default(1) @map("quantity")
+  unitPrice   Int     @default(0) @map("unit_price")
+  discount    Int     @default(0) @map("discount")
+  taxRate     Int     @default(0) @map("tax_rate")
+  lineTotal   Int     @default(0) @map("line_total")
+
+  displayOrder Int @default(0) @map("display_order")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([quotationId])
+  @@index([productId])
+  @@map("quotation_items")
+}
+
+// ──────────────────────────────────────────────
+// Sales: QuotationTimeline
+// ──────────────────────────────────────────────
+
+model QuotationTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  quotationId String @map("quotation_id")
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([quotationId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("quotation_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesOrder
+// ──────────────────────────────────────────────
+
+model SalesOrder {
+  id                    String           @id @default(uuid()) @map("id")
+  organizationId        String           @map("organization_id")
+  orderNumber           String           @map("order_number")
+  quotationId           String?          @map("quotation_id")
+  companyId             String           @map("company_id")
+  contactId             String           @map("contact_id")
+  dealId                String?          @map("deal_id")
+  ownerId               String           @map("owner_id")
+
+  orderDate             DateTime         @map("order_date")
+  expectedDeliveryDate  DateTime?        @map("expected_delivery_date")
+  actualDeliveryDate    DateTime?        @map("actual_delivery_date")
+
+  currency              String           @default("USD") @map("currency")
+  exchangeRate          Int              @default(1) @map("exchange_rate")
+
+  subtotal              Int              @default(0) @map("subtotal")
+  discountAmount        Int              @default(0) @map("discount_amount")
+  taxAmount             Int              @default(0) @map("tax_amount")
+  shippingAmount        Int              @default(0) @map("shipping_amount")
+  grandTotal            Int              @default(0) @map("grand_total")
+
+  status                SalesOrderStatus @default(DRAFT) @map("status")
+
+  notes                 String?          @map("notes")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  quotation    Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  company      Company      @relation(fields: [companyId], references: [id])
+  contact      Contact      @relation(fields: [contactId], references: [id])
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  owner        User         @relation("SalesOrderOwner", fields: [ownerId], references: [id])
+  deletedBy    User?        @relation("SalesOrderDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  items    SalesOrderItem[]
+  timeline SalesOrderTimeline[]
+  invoices SalesInvoice[]
+
+  @@index([organizationId])
+  @@index([orderNumber])
+  @@index([quotationId])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([deletedAt])
+  @@map("sales_orders")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesOrderItem
+// ──────────────────────────────────────────────
+
+model SalesOrderItem {
+  id           String @id @default(uuid()) @map("id")
+  salesOrderId String @map("sales_order_id")
+  productId    String @map("product_id")
+
+  description  String? @map("description")
+  quantity     Int     @default(1) @map("quantity")
+  unitPrice    Int     @default(0) @map("unit_price")
+  discount     Int     @default(0) @map("discount")
+  taxRate      Int     @default(0) @map("tax_rate")
+  lineTotal    Int     @default(0) @map("line_total")
+
+  displayOrder Int @default(0) @map("display_order")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([productId])
+  @@map("sales_order_items")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesOrderTimeline
+// ──────────────────────────────────────────────
+
+model SalesOrderTimeline {
+  id          String   @id @default(uuid()) @map("id")
+  event       String   @map("event")
+  description String?  @map("description")
+  details     Json?    @map("details")
+
+  salesOrderId String @map("sales_order_id")
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([salesOrderId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("sales_order_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesInvoice
+// ──────────────────────────────────────────────
+
+model SalesInvoice {
+  id              String              @id @default(uuid()) @map("id")
+  organizationId  String              @map("organization_id")
+  invoiceNumber   String              @map("invoice_number")
+  salesOrderId    String?             @map("sales_order_id")
+  quotationId     String?             @map("quotation_id")
+  companyId       String              @map("company_id")
+  contactId       String              @map("contact_id")
+  ownerId         String              @map("owner_id")
+
+  issueDate       DateTime            @map("issue_date")
+  dueDate         DateTime            @map("due_date")
+
+  currency        String              @default("USD") @map("currency")
+  exchangeRate    Int                 @default(1) @map("exchange_rate")
+
+  subtotal        Int                 @default(0) @map("subtotal")
+  discountAmount  Int                 @default(0) @map("discount_amount")
+  taxAmount       Int                 @default(0) @map("tax_amount")
+  shippingAmount  Int                 @default(0) @map("shipping_amount")
+  grandTotal      Int                 @default(0) @map("grand_total")
+
+  amountPaid      Int                 @default(0) @map("amount_paid")
+  balanceDue      Int                 @default(0) @map("balance_due")
+
+  paymentStatus   InvoicePaymentStatus @default(UNPAID) @map("payment_status")
+  status          SalesInvoiceStatus   @default(DRAFT) @map("status")
+
+  notes           String?             @map("notes")
+  terms           String?             @map("terms")
+
+  // Soft delete
+  deletedAt         DateTime? @map("deleted_at")
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedReason     String?   @map("deleted_reason")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesOrder   SalesOrder?   @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  quotation    Quotation?    @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  company      Company       @relation(fields: [companyId], references: [id])
+  contact      Contact       @relation(fields: [contactId], references: [id])
+  owner        User          @relation("SalesInvoiceOwner", fields: [ownerId], references: [id])
+  deletedBy    User?         @relation("SalesInvoiceDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  items       SalesInvoiceItem[]
+  timeline    SalesInvoiceTimeline[]
+  payments    SalesPayment[]
+  allocations PaymentAllocation[]
+
+  @@index([organizationId])
+  @@index([invoiceNumber])
+  @@index([salesOrderId])
+  @@index([quotationId])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([issueDate])
+  @@index([dueDate])
+  @@index([deletedAt])
+  @@map("sales_invoices")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesInvoiceItem
+// ──────────────────────────────────────────────
+
+model SalesInvoiceItem {
+  id        String @id @default(uuid()) @map("id")
+  invoiceId String @map("invoice_id")
+  productId String @map("product_id")
+
+  description String? @map("description")
+  quantity    Int     @default(1) @map("quantity")
+  unitPrice   Int     @default(0) @map("unit_price")
+  discount    Int     @default(0) @map("discount")
+  taxRate     Int     @default(0) @map("tax_rate")
+  lineTotal   Int     @default(0) @map("line_total")
+
+  displayOrder Int @default(0) @map("display_order")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  invoice SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@map("sales_invoice_items")
+}
+
+// ──────────────────────────────────────────────
+// Sales: SalesInvoiceTimeline
+// ──────────────────────────────────────────────
+
+model SalesInvoiceTimeline {
+  id        String   @id @default(uuid()) @map("id")
+  event     String   @map("event")
+  description String? @map("description")
+  details   Json?    @map("details")
+
+  invoiceId  String @map("invoice_id")
+  invoice    SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("sales_invoice_timeline_entries")
+}
+
+// ──────────────────────────────────────────────
+// Payments: SalesPayment
+// ──────────────────────────────────────────────
+
+model SalesPayment {
+  id              String              @id @default(uuid()) @map("id")
+  organizationId  String              @map("organization_id")
+  invoiceId       String?             @map("invoice_id")
+  gateway         PaymentGatewayType  @map("gateway")
+  transactionId   String?             @map("transaction_id")
+  amount          Int                 @map("amount")
+  currency        String              @default("USD") @map("currency")
+  paymentMethod   String?             @map("payment_method")
+  status          SalesPaymentStatus  @default(PENDING) @map("status")
+  paidAt          DateTime?           @map("paid_at")
+  metadata        Json?               @map("metadata")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      SalesInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  allocations  PaymentAllocation[]
+
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@index([transactionId])
+  @@index([gateway])
+  @@index([status])
+  @@index([paidAt])
+  @@map("sales_payments")
+}
+
+// ──────────────────────────────────────────────
+// Payments: PaymentAllocation
+// ──────────────────────────────────────────────
+
+model PaymentAllocation {
+  id               String   @id @default(uuid()) @map("id")
+  paymentId        String   @map("payment_id")
+  invoiceId        String   @map("invoice_id")
+  allocatedAmount  Int      @map("allocated_amount")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  payment SalesPayment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice SalesInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([invoiceId])
+  @@map("payment_allocations")
 }
