@@ -24,6 +24,8 @@ import { SalesModule } from './sales/sales.module';
 import { SalesOrdersModule } from './sales/orders/sales-orders.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { PaymentsModule } from './payments/payments.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { ProcurementModule } from './procurement/procurement.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -79,6 +81,8 @@ import stripeConfig from './config/stripe.config';
     SalesOrdersModule,
     InvoicesModule,
     PaymentsModule,
+    InventoryModule,
+    ProcurementModule,
   ],
   providers: [
     {
