@@ -30,6 +30,7 @@ import { AccountingModule } from './accounting/accounting.module';
 import { HrmsModule } from './hrms/hrms.module';
 import { ReportsModule } from './reports/reports.module';
 import { WorkflowsModule } from './workflows/workflows.module';
+import { AiModule } from './ai/ai.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationSchema } from './config/config.schema';
 import appConfig from './config/app.config';
@@ -91,6 +92,7 @@ import stripeConfig from './config/stripe.config';
     HrmsModule,
     ReportsModule,
     WorkflowsModule,
+    AiModule,
   ],
   providers: [
     {
