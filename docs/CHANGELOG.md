@@ -4,6 +4,44 @@
 
 ---
 
+## Sprint 12.2 — 2026-07-17
+
+### Enterprise AI Core Runtime
+
+- **Prompt Registry**: register, get, search, versioning, variable interpolation (`{{varName}}`), validation, filesystem loading (JSON/frontmatter), in-memory cache with configurable TTL
+- **Capability Registry**: register/get/search capabilities; findByTool/Model/Provider; provider preferences, temperature, context limits, streaming flags
+- **Tool Registry**: `AITool<TInput, TOutput>` interface with `execute() + validate()`; Map-based registration with category grouping, search, LLM function-calling definitions
+- **AI Sandbox**: 5-point validation (org isolation, RBAC, input size, tool.validate, timeout); sensitive data masking; audit logging for every execution
+- **Execution Pipeline**: Full orchestration — registry → sandbox → permission → timeout → audit; structured `ExecutionPipelineResult`; batch execution support
+- **Decorators**: `@AITool`, `@Capability`, `@AIPermission`, `@AIMetadata`, `@ProviderSupport` using NestJS `SetMetadata` + `Reflector`
+- **Metadata Service**: Reflector-based reader for all AI decorator metadata
+- **102 new unit tests** across 7 test suites
+- Reuses existing AI foundation (Sprint 12.1): IProvider, ProviderFactory, AIGatewayService, config, exceptions
+- Reuses existing platform: AuthorizationService (RBAC), AuditLogService (audit trail)
+
+**Tests:** 930 total (+102) | **Status:** ✅ Build, ✅ Lint (0 errors), ✅ Prisma Validate
+
+---
+
+## Sprint 12.1 — 2026-07-13
+
+### AI Platform Foundation
+
+- Created `IProvider` interface with 7-method contract (chat, stream, embed, toolCall, health, countTokens)
+- Abstract `BaseProvider` with health(), maskApiKey(), validateAvailability()
+- `ProviderFactory` — dynamic Map-based provider registration and lookup
+- `ProviderRouterService` — intelligent selection with automatic failover chain
+- `AIGatewayService` — unified entry point for all AI operations
+- 6 provider implementations: OpenAI, Gemini, Claude, Ollama, Azure OpenAI, AWS Bedrock
+- No direct SDK imports — all via fetch(), swappable via config
+- Configuration via environment variables with `registerAs('ai', ...)`
+- Full Swagger documentation on all endpoints
+- 60 comprehensive unit tests (8 test suites)
+
+**Tests:** 828 total (+60) | **Status:** ✅ Build, ✅ Lint, ✅ Prisma Validate
+
+---
+
 ## Sprint 3.6.1 — 2026-07-09
 
 ### Real Razorpay Integration

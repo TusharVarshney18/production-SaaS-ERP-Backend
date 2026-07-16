@@ -11,10 +11,19 @@ import { OllamaProvider } from './providers/ollama/ollama.provider';
 import { AzureOpenAIProvider } from './providers/azure-openai/azure-openai.provider';
 import { BedrockProvider } from './providers/bedrock/bedrock.provider';
 import { AIHealthService } from './health/ai-health.service';
+import { PromptRegistryService } from './registry/prompt-registry.service';
+import { CapabilityRegistryService } from './registry/capability-registry.service';
+import { ToolRegistryService } from './registry/tool-registry.service';
+import { MetadataService } from './registry/metadata/metadata.service';
+import { AISandboxService } from './sandbox/ai-sandbox.service';
+import { AIPermissionService } from './authorization/ai-permission.service';
+import { ExecutionPipelineService } from './tools/execution/execution-pipeline.service';
+import { AuthorizationModule } from '../authorization/authorization.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig)],
+  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule],
   controllers: [AIController],
   providers: [
     ProviderFactory,
@@ -27,8 +36,27 @@ import aiConfig from './config/ai.config';
     OllamaProvider,
     AzureOpenAIProvider,
     BedrockProvider,
+    PromptRegistryService,
+    CapabilityRegistryService,
+    ToolRegistryService,
+    MetadataService,
+    AISandboxService,
+    AIPermissionService,
+    ExecutionPipelineService,
   ],
-  exports: [AIGatewayService, ProviderRouterService, ProviderFactory, AIHealthService],
+  exports: [
+    AIGatewayService,
+    ProviderRouterService,
+    ProviderFactory,
+    AIHealthService,
+    PromptRegistryService,
+    CapabilityRegistryService,
+    ToolRegistryService,
+    MetadataService,
+    AISandboxService,
+    AIPermissionService,
+    ExecutionPipelineService,
+  ],
 })
 export class AiModule implements OnModuleInit {
   constructor(

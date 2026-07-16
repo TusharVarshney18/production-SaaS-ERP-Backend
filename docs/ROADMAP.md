@@ -1,6 +1,6 @@
 # ERPX — Product Roadmap
 
-> **Last Updated:** 2026-07-09  
+> **Last Updated:** 2026-07-17  
 > **Document Owner:** Product Team
 
 ---
@@ -118,98 +118,118 @@
 
 ---
 
-## Phase 5: CRM 📋 (Planned)
+## Phase 5: CRM ✅ (Complete)
 
-### Sprint 6 — Customer Relationship Management
-- Contact management
-- Lead tracking and pipeline
-- Deal management with stages
-- Activity history and notes
-- Email integration
-- Task management
-- Reporting and analytics
-- Customer segmentation
-
----
-
-## Phase 6: Inventory 📋 (Planned)
-
-### Sprint 7 — Inventory Management
-- Product catalog
-- Stock tracking with warehouses
-- Purchase orders
-- Sales orders
-- Inventory adjustments
-- Barcode/RFID support
-- Low stock alerts
-- Inventory valuation (FIFO, LIFO, weighted average)
-- Supplier management
+### Sprint 4 — Customer Relationship Management
+- ✅ Lead tracking with status/source/priority workflow
+- ✅ Company management with notes and activities
+- ✅ Contact management with timelines
+- ✅ Pipeline and stage management
+- ✅ Deal management with stage transitions
+- ✅ Activity history with timeline automation
+- ✅ CRM dashboards in reporting platform
 
 ---
 
-## Phase 7: HRMS 📋 (Planned)
+## Phase 6: Inventory & Procurement ✅ (Complete)
 
-### Sprint 8 — Human Resource Management
-- Employee directory and profiles
-- Attendance tracking
-- Leave management
-- Payroll processing
-- Expense management
-- Performance reviews
-- Document management
-- Onboarding/offboarding workflows
+### Sprint 6 — Inventory Management
+- ✅ Product catalog with categories and units
+- ✅ Warehouse management (CRUD, archive, restore, soft-delete)
+- ✅ Stock tracking (reserve, release, adjust, increase, decrease)
+- ✅ Inventory transfers (DRAFT → IN_TRANSIT → COMPLETED)
+- ✅ Stock ledger (append-only audit trail)
+- ✅ Low stock alerts and dashboard KPIs
+
+### Sprint 7 — Procurement & Vendor Management
+- ✅ Vendor management with search/filter
+- ✅ Purchase orders with status lifecycle
+- ✅ Goods receipt with inventory integration
+- ✅ Auto PO/GRN numbering (PO-YYMMDD-NNNN)
+- ✅ Procurement dashboards
 
 ---
 
-## Phase 8: AI Platform 📋 (Planned)
+## Phase 7: Accounting & HRMS ✅ (Complete)
 
-### Sprint 9 — AI Infrastructure
-- AI Gateway with provider abstraction (OpenAI, Anthropic)
-- Prompt template management
-- Token usage tracking and cost attribution
-- PII detection and redaction
+### Sprint 8 — Accounting Engine
+- ✅ Chart of accounts with hierarchy
+- ✅ Fiscal years with accounting periods
+- ✅ Double-entry journal entries (debits = credits)
+- ✅ Journal reversal via opposite entry in transaction
+- ✅ Trial balance, balance sheet, P&L reports
+- ✅ Accounting hooks for future integration
 
-### Sprint 10 — AI Features
-- AI Excel/CSV/PDF Import Assistant
-  - AI column mapping engine
-  - Data validation with AI
-  - Duplicate detection with embeddings
-  - Smart suggestions based on context
-- AI Assistant — natural language interface
-- OCR pipeline for scanned documents
+### Sprint 9 — HRMS Foundation
+- ✅ Departments and designations with levels
+- ✅ Employee management with hierarchy
+- ✅ Attendance tracking (check-in/check-out)
+- ✅ Leave management with overlap prevention
+- ✅ Payroll hooks (interfaces only)
+
+---
+
+## Phase 8: Reporting, Workflows & AI ✅ (Complete)
+
+### Sprint 10 — Reporting & Analytics Platform
+- ✅ Core report engine with reusable primitives
+- ✅ 6 domain dashboards (Executive, Sales, Inventory, Procurement, Accounting, HR)
+- ✅ 22 report endpoints
+- ✅ CSV, Excel XML, PDF HTML exports
+
+### Sprint 11 — Workflow Automation Engine
+- ✅ Event bus with 17 standard business events
+- ✅ Rule engine with condition evaluation
+- ✅ 5 action handlers (Email, Webhook, Notification, Audit, AI Hook)
+- ✅ Strategy-pattern action registry
+- ✅ Execution logs for audit/debug
+
+### Sprint 12.1 — AI Platform Foundation
+- ✅ Multi-provider gateway (OpenAI, Gemini, Claude, Ollama, Azure OpenAI, Bedrock)
+- ✅ Provider factory and router with failover
+- ✅ Chat, streaming, embeddings, tool calling
+- ✅ Health checks and configuration
+
+### Sprint 12.2 — AI Core Runtime
+- ✅ Prompt Registry (versioning, interpolation, validation, caching)
+- ✅ Capability Registry (models, providers, tools)
+- ✅ Tool Registry with AITool interface
+- ✅ AI Sandbox (org isolation, RBAC, validation, timeout, audit)
+- ✅ Execution Pipeline (registry → sandbox → permission → execute → audit)
+- ✅ Decorators (@AITool, @Capability, @AIPermission, @AIMetadata, @ProviderSupport)
+- ✅ 102 tests, 930 total
+
+---
+
+## Phase 9: AI Agents & Features 🔜 (Next)
+
+### Sprint 13 — AI Agents
+- Domain-specific AI Agents (Sales, Finance, Inventory, HR, Procurement)
+- Tool implementations wrapping business services
+- Agent orchestration
+- Session/organization memory
 - Natural language data queries
 
----
-
-## Phase 9: Production Launch 📋 (Future)
-
-### Sprint 11 — Enterprise & Scale
+### Sprint 14 — AI Import Assistant & Enterprise
+- AI Excel/CSV/PDF Import Assistant
+- AI column mapping engine
+- Duplicate detection with embeddings
 - SSO/SAML integration
-- Schema-per-tenant isolation
-- Dedicated infrastructure provisioning
-- Advanced analytics and reporting
-- API marketplace for integrations
-
-### Sprint 12 — Platform Maturity
-- Web Push notifications
-- WhatsApp notification channel
-- Workflow automation engine
-- Mobile application
-- Public API with developer portal
-- Marketplace for plugins and integrations
+- Web Push and WhatsApp notifications
 
 ---
 
 ## Timeline Overview
 
 ```
-Phase 1: Foundation      ████████████████████░░░░░░░░░░░░  Sprint 1-3     ✅
-Phase 2: Billing         ████████████████████░░░░░░░░░░░░  Sprint 3.2-3.6  ✅
-Phase 3: Portal          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 4       🔜
-Phase 4: Super Admin     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 5       📋
-Phase 5: CRM             ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 6       📋
-Phase 6: Inventory       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 7       📋
-Phase 7: HRMS            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 8       📋
-Phase 8: AI Platform     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 9-10    📋
-Phase 9: Production      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 11-12   📋
+Phase 1: Foundation            ████████████████████████████████  Sprint 1-3     ✅
+Phase 2: Billing               ████████████████████████████████  Sprint 3.2-3.8  ✅
+Phase 3: Portal (Backend)      ████████████████████████████████  Sprint 3.7     ✅
+Phase 4: Super Admin           ████████████████████████████████  Sprint 3.8     ✅
+Phase 5: CRM                   ████████████████████████████████  Sprint 4       ✅
+Phase 6: Inventory/Procurement ████████████████████████████████  Sprint 6-7     ✅
+Phase 7: Accounting/HRMS       ████████████████████████████████  Sprint 8-9     ✅
+Phase 8: Reports/Workflows/AI  ████████████████████████████████  Sprint 10-12   ✅
+Phase 9: AI Agents             ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 13     🔜
+Phase 10: Enterprise           ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 14     📋
 ```
