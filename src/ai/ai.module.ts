@@ -54,10 +54,11 @@ import { AuthorizationModule } from '../authorization/authorization.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { KnowledgeModule } from './knowledge/rag/knowledge.module';
 import { MCPModule } from './mcp/mcp.module';
+import { MultiAgentModule } from './multi-agent/multi-agent.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule],
+  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule, MultiAgentModule],
   controllers: [AIController],
   providers: [
     ProviderFactory,
@@ -143,6 +144,7 @@ import aiConfig from './config/ai.config';
     ContextWindowService,
     KnowledgeModule,
     MCPModule,
+    MultiAgentModule,
   ],
 })
 export class AiModule implements OnModuleInit {
