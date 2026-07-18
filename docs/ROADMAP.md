@@ -210,6 +210,25 @@
 - ✅ 7 Domain Agents (CEO, Finance, Sales, Inventory, HR, Reporting, Developer)
 - ✅ 58 tests, 988 total
 
+### Sprint 12.4 — Enterprise Conversation & Memory
+- ✅ Conversation Manager (start/continue/end conversations)
+- ✅ Session Memory (active state, 50-message cap, temp variables)
+- ✅ Long-Term Memory (user + org scoped, TTL, provider abstraction)
+- ✅ Context Window Manager (budgeting, trimming, memory injection)
+- ✅ Conversation History (filters, tool/agent/error history, summaries)
+- ✅ Memory Providers (4 interfaces + InMemory implementations)
+- ✅ Repository Layer (conversation + memory repositories)
+- ✅ 68 tests, 1056 total
+
+### Sprint 12.4 — Conversation & Memory
+- ✅ Conversation Manager (start/continue/end, message tracking)
+- ✅ Session Memory (active state, 50-message cap, temp variables)
+- ✅ Long-Term Memory (user + org scoped, TTL, provider abstraction)
+- ✅ Context Window Manager (budgeting, trimming, memory injection)
+- ✅ Conversation History (filters, tool/agent/error history, summaries)
+- ✅ 4 Memory Provider interfaces + InMemory implementations
+- ✅ 68 tests, 1056 total
+
 ---
 
 ## Phase 9: AI Agents & Features 🔜 (Next)
@@ -242,5 +261,6 @@ Phase 6: Inventory/Procurement ████████████████�
 Phase 7: Accounting/HRMS       ████████████████████████████████  Sprint 8-9     ✅
 Phase 8: Reports/Workflows/AI  ████████████████████████████████  Sprint 10-12   ✅
 Phase 9: AI Agents             ████████████████████████████████  Sprint 12.3    ✅
+Phase 10: Conversation & Memory ████████████████████████████████  Sprint 12.4    ✅
 Phase 10: Enterprise           ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 14     📋
 ```

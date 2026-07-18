@@ -4,6 +4,25 @@
 
 ---
 
+## Sprint 12.4 — 2026-07-17
+
+### Enterprise Conversation & Memory
+
+- **Conversation Manager**: Start/continue/end conversations with full lifecycle; message count and token tracking; validation (ended convs rejected, nonexistent convs throw)
+- **Session Memory**: Per-user active state with 50-message cap; temporary variables; current agent/plan tracking; activity timestamps
+- **Long-Term Memory**: Provider abstraction with InMemory implementation; user-scoped + organization-scoped memory; TTL support; CRUD + find + scope delete
+- **Context Window Manager**: Token budgeting with aggressive trimming (preserves system messages); memory injection as system messages; estimateTokenCount utility
+- **Conversation History**: Full history with filters; tool execution history; agent selection tracking; error history; conversation summaries
+- **Memory Providers**: 4 provider interfaces (IConversationProvider, IMessageProvider, ISummaryProvider, IMemoryStorageProvider) + InMemory implementations; designed for future PostgreSQL/Redis
+- **Repository Layer**: ConversationRepository + MemoryRepository between services and providers
+- **68 new unit tests** across 6 test suites; enforced org + user isolation throughout
+- Reuses Sprints 12.1-12.3 (providers, registries, pipeline, agents, context builder) — zero duplication
+- No Prisma models — all data through provider abstraction
+
+**Tests:** 1056 total (+68) | **Status:** ✅ Build, ✅ Lint (0 errors), ✅ Prisma Validate
+
+---
+
 ## Sprint 12.3 — 2026-07-17
 
 ### Enterprise AI Agent Framework

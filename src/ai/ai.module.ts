@@ -31,6 +31,19 @@ import { InventoryAgent } from './agents/agents/inventory.agent';
 import { HrAgent } from './agents/agents/hr.agent';
 import { ReportingAgent } from './agents/agents/reporting.agent';
 import { DeveloperAgent } from './agents/agents/developer.agent';
+import {
+  InMemoryConversationProvider,
+  InMemoryMessageProvider,
+  InMemorySummaryProvider,
+  InMemoryMemoryStorageProvider,
+} from './conversation/providers/in-memory.provider';
+import { ConversationRepository } from './conversation/repositories/conversation.repository';
+import { MemoryRepository } from './conversation/repositories/memory.repository';
+import { SessionMemoryService } from './conversation/services/session-memory.service';
+import { ConversationManagerService } from './conversation/services/conversation-manager.service';
+import { ConversationHistoryService } from './conversation/services/conversation-history.service';
+import { LongTermMemoryService } from './conversation/services/long-term-memory.service';
+import { ContextWindowService } from './conversation/services/context-window.service';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import aiConfig from './config/ai.config';
@@ -69,6 +82,17 @@ import aiConfig from './config/ai.config';
     HrAgent,
     ReportingAgent,
     DeveloperAgent,
+    InMemoryConversationProvider,
+    InMemoryMessageProvider,
+    InMemorySummaryProvider,
+    InMemoryMemoryStorageProvider,
+    ConversationRepository,
+    MemoryRepository,
+    SessionMemoryService,
+    ConversationManagerService,
+    ConversationHistoryService,
+    LongTermMemoryService,
+    ContextWindowService,
   ],
   exports: [
     AIGatewayService,
@@ -88,6 +112,11 @@ import aiConfig from './config/ai.config';
     AgentPlannerService,
     AgentExecutorService,
     ContextBuilderService,
+    SessionMemoryService,
+    ConversationManagerService,
+    ConversationHistoryService,
+    LongTermMemoryService,
+    ContextWindowService,
   ],
 })
 export class AiModule implements OnModuleInit {

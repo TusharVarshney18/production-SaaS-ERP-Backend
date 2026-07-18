@@ -1,7 +1,7 @@
 # ERPX — Project Progress
 
 > **Last Updated:** 2026-07-17  
-> **Status:** Active Development — Sprint 12.3
+> **Status:** Active Development — Sprint 12.4
 
 ---
 
@@ -37,22 +37,22 @@
 | AI Platform Foundation | ✅ Complete | Sprint 12.1 | 828 |
 | **AI Core Runtime** | **✅ Complete** | **Sprint 12.2** | **930** |
 | **AI Agent Framework** | **✅ Complete** | **Sprint 12.3** | **988** |
+| **AI Conversation & Memory** | **✅ Complete** | **Sprint 12.4** | **1056** |
 
 ---
 
 ## Current Sprint
 
-**Sprint 12.3 — Enterprise AI Agent Framework**
+**Sprint 12.4 — Enterprise Conversation & Memory**
 
-- [x] Agent Interface (IAgent with execute/plan/validate/canHandle)
-- [x] Agent Registry (Map-based registration, best-match with confidence×priority)
-- [x] Agent Factory (dynamic resolution, DI support, explicit or match-based)
-- [x] Agent Router (request → best agent → capability → plan)
-- [x] Agent Planner (plan creation, validation, complexity estimation)
-- [x] Agent Executor (full pipeline orchestration with dependency ordering)
-- [x] Context Builder (org, user, tools, capabilities, providers in context)
-- [x] 7 Domain Agents (CEO, Finance, Sales, Inventory, HR, Reporting, Developer)
-- [x] 58 comprehensive unit tests
+- [x] Conversation Manager (start/continue/end conversations)
+- [x] Session Memory (active state, 50-message cap, temp variables)
+- [x] Long-Term Memory (user + org scoped, TTL, provider abstraction)
+- [x] Context Window Manager (budgeting, trimming, memory injection)
+- [x] Conversation History (filters, tool/agent/error history, summaries)
+- [x] Memory Providers (4 interfaces + InMemory implementations)
+- [x] Repository Layer (conversation + memory repositories)
+- [x] 68 comprehensive unit tests
 - [x] Sprint documentation generated
 
 ---
@@ -62,7 +62,7 @@
 | Metric | Value |
 |---|---|
 | Total Test Suites | 82 |
-| Total Tests | 988 |
+| Total Tests | 1056 |
 | Test Coverage | 100% passing |
 | CI Status | ✅ Build, Lint, Test, Prisma Validate |
 
@@ -74,7 +74,7 @@
 |---|---|
 | `npm run build` | ✅ Pass |
 | `npm run lint` | ✅ Pass (0 errors, 14 pre-existing `any` warnings) |
-| `npm test` | ✅ 988/988 Passed |
+| `npm test` | ✅ 1056/1056 Passed |
 | `npx prisma validate` | ✅ Valid |
 
 ---
@@ -122,4 +122,5 @@ Planned scope:
 | M14 — AI Platform Foundation | Sprint 12.1 | ✅ Achieved |
 | M15 — AI Core Runtime | Sprint 12.2 | ✅ Achieved |
 | M16 — AI Agent Framework | Sprint 12.3 | ✅ Achieved |
-| M17 — AI Agents & Tools | Sprint 13 | 🔜 Planned |
+| M17 — AI Conversation & Memory | Sprint 12.4 | ✅ Achieved |
+| M18 — AI Agents & Tools | Sprint 13 | 🔜 Planned |
