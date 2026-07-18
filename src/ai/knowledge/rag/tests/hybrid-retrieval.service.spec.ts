@@ -15,7 +15,8 @@ describe('HybridRetrievalService', () => {
     vectorStore = new InMemoryVectorStore();
     docRepo = new DocumentRepository();
     const mockProvider = new MockEmbeddingProvider();
-    const factory = new EmbeddingProviderFactory(mockProvider);
+    const factory = new EmbeddingProviderFactory();
+    factory.registerProvider(mockProvider, true);
     const ranker = new RankerService();
 
     service = new HybridRetrievalService(vectorStore, factory, docRepo, ranker);

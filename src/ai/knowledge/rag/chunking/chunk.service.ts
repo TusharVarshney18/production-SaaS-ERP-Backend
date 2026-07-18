@@ -7,13 +7,15 @@ import { HeadingAwareChunkStrategy } from './heading-aware-chunk.strategy';
 export class ChunkService {
   private readonly logger = new Logger(ChunkService.name);
   private readonly strategies = new Map<string, IChunkStrategy>();
+  private readonly defaultStrategy: IChunkStrategy;
 
   constructor(
-    private readonly fixedSizeStrategy: FixedSizeChunkStrategy,
-    private readonly headingAwareStrategy: HeadingAwareChunkStrategy,
+    fixedSizeStrategy: FixedSizeChunkStrategy,
+    headingAwareStrategy: HeadingAwareChunkStrategy,
   ) {
-    this.registerStrategy(this.fixedSizeStrategy);
-    this.registerStrategy(this.headingAwareStrategy);
+    this.defaultStrategy = fixedSizeStrategy;
+    this.registerStrategy(fixedSizeStrategy);
+    this.registerStrategy(headingAwareStrategy);
   }
 
   registerStrategy(strategy: IChunkStrategy): void {
@@ -25,7 +27,7 @@ export class ChunkService {
     if (name && this.strategies.has(name)) {
       return this.strategies.get(name)!;
     }
-    return this.fixedSizeStrategy;
+    return this.defaultStrategy;
   }
 
   async chunk(
@@ -38,6 +40,6 @@ export class ChunkService {
   }
 
   estimateTokens(text: string): number {
-    return this.fixedSizeStrategy.estimateTokens(text);
+    return this.defaultStrategy.estimateTokens(text);
   }
 }

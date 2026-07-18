@@ -7,10 +7,11 @@ describe('EmbeddingProviderFactory', () => {
 
   beforeEach(() => {
     mockProvider = new MockEmbeddingProvider();
-    factory = new EmbeddingProviderFactory(mockProvider);
+    factory = new EmbeddingProviderFactory();
+    factory.registerProvider(mockProvider, true);
   });
 
-  it('should register mock provider on init', () => {
+  it('should register mock provider', () => {
     expect(factory.getRegisteredProviders()).toContain('mock');
   });
 

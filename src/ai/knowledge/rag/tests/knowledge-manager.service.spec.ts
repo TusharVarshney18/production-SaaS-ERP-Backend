@@ -23,7 +23,8 @@ describe('KnowledgeManagerService', () => {
     const chunkService = new ChunkService(fixedChunk, headingChunk);
     const vectorStore = new InMemoryVectorStore();
     const mockProvider = new MockEmbeddingProvider();
-    const factory = new EmbeddingProviderFactory(mockProvider);
+    const factory = new EmbeddingProviderFactory();
+    factory.registerProvider(mockProvider, true);
     knowledgeRepo = new KnowledgeRepository();
     const docRepo = new DocumentRepository();
     const indexingService = new IndexingService(vectorStore, factory, docRepo);

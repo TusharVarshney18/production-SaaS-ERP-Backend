@@ -6,6 +6,11 @@ import {
   InMemoryMessageProvider,
   InMemorySummaryProvider,
 } from '../providers/in-memory.provider';
+import {
+  CONVERSATION_PROVIDER_TOKEN,
+  MESSAGE_PROVIDER_TOKEN,
+  SUMMARY_PROVIDER_TOKEN,
+} from '../providers/tokens';
 import { ConversationMessage } from '../interfaces/conversation.interface';
 
 describe('ConversationHistoryService', () => {
@@ -20,6 +25,18 @@ describe('ConversationHistoryService', () => {
         InMemoryConversationProvider,
         InMemoryMessageProvider,
         InMemorySummaryProvider,
+        {
+          provide: CONVERSATION_PROVIDER_TOKEN,
+          useExisting: InMemoryConversationProvider,
+        },
+        {
+          provide: MESSAGE_PROVIDER_TOKEN,
+          useExisting: InMemoryMessageProvider,
+        },
+        {
+          provide: SUMMARY_PROVIDER_TOKEN,
+          useExisting: InMemorySummaryProvider,
+        },
       ],
     }).compile();
 

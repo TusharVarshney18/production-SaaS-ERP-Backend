@@ -37,6 +37,12 @@ import {
   InMemorySummaryProvider,
   InMemoryMemoryStorageProvider,
 } from './conversation/providers/in-memory.provider';
+import {
+  CONVERSATION_PROVIDER_TOKEN,
+  MESSAGE_PROVIDER_TOKEN,
+  SUMMARY_PROVIDER_TOKEN,
+  MEMORY_STORAGE_PROVIDER_TOKEN,
+} from './conversation/providers/tokens';
 import { ConversationRepository } from './conversation/repositories/conversation.repository';
 import { MemoryRepository } from './conversation/repositories/memory.repository';
 import { SessionMemoryService } from './conversation/services/session-memory.service';
@@ -46,10 +52,11 @@ import { LongTermMemoryService } from './conversation/services/long-term-memory.
 import { ContextWindowService } from './conversation/services/context-window.service';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
+import { KnowledgeModule } from './knowledge/rag/knowledge.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule],
+  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule],
   controllers: [AIController],
   providers: [
     ProviderFactory,
@@ -86,6 +93,22 @@ import aiConfig from './config/ai.config';
     InMemoryMessageProvider,
     InMemorySummaryProvider,
     InMemoryMemoryStorageProvider,
+    {
+      provide: CONVERSATION_PROVIDER_TOKEN,
+      useExisting: InMemoryConversationProvider,
+    },
+    {
+      provide: MESSAGE_PROVIDER_TOKEN,
+      useExisting: InMemoryMessageProvider,
+    },
+    {
+      provide: SUMMARY_PROVIDER_TOKEN,
+      useExisting: InMemorySummaryProvider,
+    },
+    {
+      provide: MEMORY_STORAGE_PROVIDER_TOKEN,
+      useExisting: InMemoryMemoryStorageProvider,
+    },
     ConversationRepository,
     MemoryRepository,
     SessionMemoryService,
@@ -117,6 +140,7 @@ import aiConfig from './config/ai.config';
     ConversationHistoryService,
     LongTermMemoryService,
     ContextWindowService,
+    KnowledgeModule,
   ],
 })
 export class AiModule implements OnModuleInit {

@@ -6,6 +6,7 @@ import {
   GatewayTimeoutException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ActorType, AuditSeverity } from '@prisma/client';
 import { AITool } from '../tools/interfaces/ai-tool.interface';
 import { AIPermissionService } from '../authorization/ai-permission.service';
 import { AuditLogService, CreateAuditLogParams } from '../../audit-log/audit-log.service';
@@ -173,7 +174,7 @@ export class AISandboxService {
     const auditParams: CreateAuditLogParams = {
       organizationId: params.organizationId,
       actorId: params.userId,
-      actorType: 'USER' as any,
+      actorType: ActorType.USER,
       event: `ai.tool.${params.success ? 'executed' : 'failed'}`,
       resource: 'ai:tool',
       resourceId: params.toolName,
@@ -185,7 +186,7 @@ export class AISandboxService {
         error: params.error,
         input: params.input ? this.maskSensitiveData(params.input) : undefined,
       } as Record<string, unknown>,
-      severity: params.success ? ('INFO' as any) : ('ERROR' as any),
+      severity: params.success ? AuditSeverity.INFO : AuditSeverity.ERROR,
       requestId: params.requestId,
     };
 

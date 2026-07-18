@@ -4,6 +4,7 @@ import { BaseProvider } from '../base-provider';
 import { ChatRequest, ChatResponse, EmbeddingResponse, ProviderConfig } from '../../dto/ai.types';
 import { InvalidProviderException } from '../../exceptions/invalid-provider.exception';
 import { StreamingException } from '../../exceptions/streaming.exception';
+import { estimateTokens } from '../../constants';
 
 @Injectable()
 export class OpenAIProvider extends BaseProvider {
@@ -153,7 +154,7 @@ export class OpenAIProvider extends BaseProvider {
 
   async countTokens(text: string): Promise<number> {
     if (!text) return 0;
-    return Math.ceil(text.length / 4);
+    return estimateTokens(text);
   }
 
   protected async checkAvailability(): Promise<boolean> {

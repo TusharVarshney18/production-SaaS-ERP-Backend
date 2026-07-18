@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { IDocumentRepository } from '../interfaces/repository.interface';
 import { DocumentChunk } from '../dto/chunk.dto';
 
 @Injectable()
-export class DocumentRepository {
+export class DocumentRepository implements IDocumentRepository {
   private readonly chunks = new Map<string, DocumentChunk>();
 
   async saveChunks(chunks: DocumentChunk[]): Promise<DocumentChunk[]> {

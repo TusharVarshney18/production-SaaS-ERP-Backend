@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { EmbeddingProviderFactory } from './embeddings/embedding-provider.factory';
 import { MockEmbeddingProvider } from './embeddings/mock-embedding.provider';
 import { InMemoryVectorStore } from './vector/in-memory-vector.store';
@@ -46,4 +46,13 @@ import { KnowledgeManagerService } from './knowledge-manager.service';
     KnowledgeManagerService,
   ],
 })
-export class KnowledgeModule {}
+export class KnowledgeModule implements OnModuleInit {
+  constructor(
+    private readonly factory: EmbeddingProviderFactory,
+    private readonly mockProvider: MockEmbeddingProvider,
+  ) {}
+
+  onModuleInit() {
+    this.factory.registerProvider(this.mockProvider, true);
+  }
+}

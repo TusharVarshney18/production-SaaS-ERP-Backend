@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { IKnowledgeRepository } from '../interfaces/repository.interface';
 import { KnowledgeDocument, DocumentVersion, DocumentStatus } from '../dto/document.dto';
 
 @Injectable()
-export class KnowledgeRepository {
+export class KnowledgeRepository implements IKnowledgeRepository {
   private readonly documents = new Map<string, KnowledgeDocument>();
   private readonly versions = new Map<string, DocumentVersion[]>();
 
@@ -15,10 +16,7 @@ export class KnowledgeRepository {
     return this.documents.get(id) || null;
   }
 
-  async updateDocument(
-    id: string,
-    updates: Partial<KnowledgeDocument>,
-  ): Promise<KnowledgeDocument | null> {
+  async updateDocument(id: string, updates: Partial<KnowledgeDocument>): Promise<KnowledgeDocument | null> {
     const existing = this.documents.get(id);
     if (!existing) return null;
     const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
@@ -31,11 +29,7 @@ export class KnowledgeRepository {
     return this.documents.delete(id);
   }
 
-  async listDocuments(
-    organizationId: string,
-    limit = 50,
-    offset = 0,
-  ): Promise<KnowledgeDocument[]> {
+  async listDocuments(organizationId: string, limit = 50, offset = 0): Promise<KnowledgeDocument[]> {
     return [...this.documents.values()]
       .filter((d) => d.organizationId === organizationId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))

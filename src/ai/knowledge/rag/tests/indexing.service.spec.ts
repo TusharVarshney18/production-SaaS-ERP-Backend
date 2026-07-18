@@ -11,7 +11,8 @@ describe('IndexingService', () => {
   beforeEach(() => {
     vectorStore = new InMemoryVectorStore();
     const docRepo = new DocumentRepository();
-    const factory = new EmbeddingProviderFactory(new MockEmbeddingProvider());
+    const factory = new EmbeddingProviderFactory();
+    factory.registerProvider(new MockEmbeddingProvider(), true);
     indexingService = new IndexingService(vectorStore, factory, docRepo);
   });
 

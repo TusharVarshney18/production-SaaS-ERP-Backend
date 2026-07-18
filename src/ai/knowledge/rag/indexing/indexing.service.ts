@@ -1,10 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IEmbeddingProvider } from '../interfaces/embedding-provider.interface';
-import { VectorRecord } from '../interfaces/vector-store.interface';
+import { IVectorStore, VectorRecord } from '../interfaces/vector-store.interface';
+import { IDocumentRepository } from '../interfaces/repository.interface';
 import { EmbeddingProviderFactory } from '../embeddings/embedding-provider.factory';
-import { InMemoryVectorStore } from '../vector/in-memory-vector.store';
-import { DocumentRepository } from '../repositories/document.repository';
 import { DocumentChunk } from '../dto/chunk.dto';
+import { CACHE_TTL_MS } from '../../../constants';
+
+interface CacheEntry {
+  embedding: number[];
+  loadedAt: number;
+}
 
 interface IndexChunkInput {
   chunk: DocumentChunk;
@@ -14,12 +19,13 @@ interface IndexChunkInput {
 export class IndexingService {
   private readonly logger = new Logger(IndexingService.name);
   private readonly embeddingProvider: IEmbeddingProvider;
-  private readonly embeddingCache = new Map<string, number[]>();
+  private readonly embeddingCache = new Map<string, CacheEntry>();
+  private readonly maxCacheSize = 10_000;
 
   constructor(
-    private readonly vectorStore: InMemoryVectorStore,
+    private readonly vectorStore: IVectorStore,
     private readonly embeddingFactory: EmbeddingProviderFactory,
-    private readonly documentRepository: DocumentRepository,
+    private readonly documentRepository: IDocumentRepository,
   ) {
     this.embeddingProvider = this.embeddingFactory.getProvider();
   }
@@ -32,7 +38,7 @@ export class IndexingService {
     const toEmbedIndices: number[] = [];
 
     for (let i = 0; i < contents.length; i++) {
-      const cached = this.embeddingCache.get(contents[i]);
+      const cached = this.getFromCache(contents[i]);
       if (cached) {
         embeddings[i] = cached;
       } else {
@@ -46,7 +52,7 @@ export class IndexingService {
       for (let j = 0; j < toEmbed.length; j++) {
         const idx = toEmbedIndices[j];
         embeddings[idx] = newEmbeddings[j];
-        this.embeddingCache.set(toEmbed[j], newEmbeddings[j]);
+        this.addToCache(toEmbed[j], newEmbeddings[j]);
       }
     }
 
@@ -90,5 +96,25 @@ export class IndexingService {
   clearCache(): void {
     this.embeddingCache.clear();
     this.logger.log('Embedding cache cleared');
+  }
+
+  private getFromCache(key: string): number[] | undefined {
+    const entry = this.embeddingCache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.loadedAt > CACHE_TTL_MS) {
+      this.embeddingCache.delete(key);
+      return undefined;
+    }
+    return entry.embedding;
+  }
+
+  private addToCache(key: string, embedding: number[]): void {
+    if (this.embeddingCache.size >= this.maxCacheSize) {
+      const oldestKey = this.embeddingCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.embeddingCache.delete(oldestKey);
+      }
+    }
+    this.embeddingCache.set(key, { embedding, loadedAt: Date.now() });
   }
 }

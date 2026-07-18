@@ -1,11 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ProcessedDocument } from '../interfaces/processed-document.interface';
 import { DocumentParserService } from './document-parser.service';
-
-export interface ProcessedDocument {
-  text: string;
-  metadata: Record<string, unknown>;
-  cleanedText: string;
-}
+import { RAG_MAX_FILE_SIZE } from '../../../constants';
 
 @Injectable()
 export class DocumentProcessorService {
@@ -53,9 +49,8 @@ export class DocumentProcessorService {
         `Unsupported file type: ${mimeType}. Supported: ${this.parser.supportedMimeTypes.join(', ')}`,
       );
     }
-    const maxSize = 50 * 1024 * 1024;
-    if (buffer.length > maxSize) {
-      throw new Error(`File too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB (max: 50MB)`);
+    if (buffer.length > RAG_MAX_FILE_SIZE) {
+      throw new Error(`File too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB (max: ${RAG_MAX_FILE_SIZE / 1024 / 1024}MB)`);
     }
   }
 

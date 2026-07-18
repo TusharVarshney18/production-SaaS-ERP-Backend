@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConversationMessage, MemoryEntry } from '../interfaces/conversation.interface';
 import { SessionMemoryService } from './session-memory.service';
 import { LongTermMemoryService } from './long-term-memory.service';
+import { estimateTokens, DEFAULT_CONTEXT_LIMIT } from '../../constants';
 
 export interface ContextWindow {
   messages: ConversationMessage[];
@@ -28,7 +29,7 @@ export class ContextWindowService {
     maxTokens?: number,
   ): Promise<ContextWindow> {
     const session = this.sessionMemory.getSession(organizationId, userId);
-    const contextLimit = maxTokens || session?.maxContextTokens || 8192;
+    const contextLimit = maxTokens || session?.maxContextTokens || DEFAULT_CONTEXT_LIMIT;
 
     let messages = this.sessionMemory.getLastMessages(organizationId, userId);
     let totalTokens = messages.reduce((sum, m) => sum + (m.tokenCount || 0), 0);
@@ -67,10 +68,6 @@ export class ContextWindowService {
       injectedMemoryCount,
       summaryInjected,
     };
-  }
-
-  estimateTokenCount(text: string): number {
-    return Math.ceil((text || '').length / 4);
   }
 
   trimMessages(
@@ -138,7 +135,7 @@ export class ContextWindowService {
         conversationId: '',
         role: 'system',
         content: `Previous conversation summary: ${JSON.stringify(summary.value)}`,
-        tokenCount: this.estimateTokenCount(JSON.stringify(summary.value)),
+        tokenCount: estimateTokens(JSON.stringify(summary.value)),
         metadata: { type: 'conversation_summary' },
         createdAt: new Date().toISOString(),
       });

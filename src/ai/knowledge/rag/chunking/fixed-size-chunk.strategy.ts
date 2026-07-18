@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { IChunkStrategy, ChunkResult } from '../interfaces/chunk-strategy.interface';
+import { estimateTokens, RAG_DEFAULT_CHUNK_SIZE, RAG_DEFAULT_OVERLAP } from '../../../constants';
 
 export interface FixedSizeChunkOptions {
   chunkSize?: number;
@@ -10,14 +11,11 @@ export interface FixedSizeChunkOptions {
 export class FixedSizeChunkStrategy implements IChunkStrategy {
   readonly name = 'fixed-size';
 
-  private readonly defaultChunkSize = 512;
-  private readonly defaultOverlap = 64;
-
   constructor(private readonly options?: FixedSizeChunkOptions) {}
 
   async chunk(text: string, metadata?: Record<string, unknown>): Promise<ChunkResult[]> {
-    const chunkSize = this.options?.chunkSize ?? this.defaultChunkSize;
-    const overlap = this.options?.overlap ?? this.defaultOverlap;
+    const chunkSize = this.options?.chunkSize ?? RAG_DEFAULT_CHUNK_SIZE;
+    const overlap = this.options?.overlap ?? RAG_DEFAULT_OVERLAP;
     const results: ChunkResult[] = [];
 
     const words = text.split(/\s+/);
@@ -41,7 +39,7 @@ export class FixedSizeChunkStrategy implements IChunkStrategy {
           wordCount: chunkWords.length,
           strategy: this.name,
         },
-        tokenEstimate: this.estimateTokens(content),
+        tokenEstimate: estimateTokens(content),
       });
 
       i += chunkSize - overlap;
@@ -52,6 +50,6 @@ export class FixedSizeChunkStrategy implements IChunkStrategy {
   }
 
   estimateTokens(text: string): number {
-    return Math.ceil(text.length / 4);
+    return estimateTokens(text);
   }
 }

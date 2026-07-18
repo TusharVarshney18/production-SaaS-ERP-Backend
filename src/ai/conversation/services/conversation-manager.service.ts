@@ -6,6 +6,7 @@ import {
   ConversationMessage,
   ConversationStatus,
 } from '../interfaces/conversation.interface';
+import { estimateTokens, generateId } from '../../constants';
 
 @Injectable()
 export class ConversationManagerService {
@@ -25,7 +26,7 @@ export class ConversationManagerService {
   }): Promise<Conversation> {
     const now = new Date().toISOString();
     const conversation: Conversation = {
-      id: `conv-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId('conv'),
       organizationId: params.organizationId,
       userId: params.userId,
       title: params.title || `Conversation ${new Date().toLocaleDateString()}`,
@@ -67,11 +68,11 @@ export class ConversationManagerService {
       throw new BadRequestException(`Conversation ${params.conversationId} has ended`);
     }
 
-    const tokenCount = this.estimateTokens(params.content);
+    const tokenCount = estimateTokens(params.content);
     const now = new Date().toISOString();
 
     const message: ConversationMessage = {
-      id: `msg-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId('msg'),
       conversationId: params.conversationId,
       role: params.role,
       content: params.content,
@@ -138,9 +139,5 @@ export class ConversationManagerService {
     await this.conversationRepository.deleteSummary(conversationId);
     this.sessionMemory.endSessionByConversation(conversationId);
     return this.conversationRepository.deleteConversation(conversationId);
-  }
-
-  private estimateTokens(text: string): number {
-    return Math.ceil((text || '').length / 4);
   }
 }

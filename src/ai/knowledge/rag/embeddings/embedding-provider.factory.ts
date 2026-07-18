@@ -1,18 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IEmbeddingProvider } from '../interfaces/embedding-provider.interface';
-import { MockEmbeddingProvider } from './mock-embedding.provider';
 
 @Injectable()
 export class EmbeddingProviderFactory {
   private readonly logger = new Logger(EmbeddingProviderFactory.name);
   private readonly providers = new Map<string, IEmbeddingProvider>();
+  private defaultProvider: IEmbeddingProvider;
 
-  constructor(private readonly mockProvider: MockEmbeddingProvider) {
-    this.registerProvider(this.mockProvider);
-  }
-
-  registerProvider(provider: IEmbeddingProvider): void {
+  registerProvider(provider: IEmbeddingProvider, isDefault?: boolean): void {
     this.providers.set(provider.name, provider);
+    if (isDefault || !this.defaultProvider) {
+      this.defaultProvider = provider;
+    }
     this.logger.log(`Registered embedding provider: ${provider.name} (${provider.dimensions}d)`);
   }
 
@@ -20,7 +19,7 @@ export class EmbeddingProviderFactory {
     if (name && this.providers.has(name)) {
       return this.providers.get(name)!;
     }
-    return this.mockProvider;
+    return this.defaultProvider;
   }
 
   getRegisteredProviders(): string[] {

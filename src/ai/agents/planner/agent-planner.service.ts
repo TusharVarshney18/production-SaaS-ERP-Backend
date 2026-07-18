@@ -7,6 +7,7 @@ import {
   AgentExecutionPlan,
   AgentExecutionStep,
 } from '../interfaces/agent.interface';
+import { generateId } from '../../constants';
 
 @Injectable()
 export class AgentPlannerService {
@@ -73,6 +74,6 @@ export class AgentPlannerService {
   }
 
   private generatePlanId(): string {
-    return `plan-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    return generateId('plan');
   }
 }

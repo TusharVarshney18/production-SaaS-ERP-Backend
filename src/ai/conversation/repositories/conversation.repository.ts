@@ -1,21 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
-  InMemoryConversationProvider,
-  InMemoryMessageProvider,
-  InMemorySummaryProvider,
-} from '../providers/in-memory.provider';
+  IConversationProvider,
+  IMessageProvider,
+  ISummaryProvider,
+} from '../interfaces/memory-provider.interface';
+import {
+  CONVERSATION_PROVIDER_TOKEN,
+  MESSAGE_PROVIDER_TOKEN,
+  SUMMARY_PROVIDER_TOKEN,
+} from '../providers/tokens';
 import {
   Conversation,
   ConversationMessage,
   ConversationSummary,
 } from '../interfaces/conversation.interface';
+import { IConversationRepository } from '../interfaces/repository.interface';
 
 @Injectable()
-export class ConversationRepository {
+export class ConversationRepository implements IConversationRepository {
   constructor(
-    private readonly conversationProvider: InMemoryConversationProvider,
-    private readonly messageProvider: InMemoryMessageProvider,
-    private readonly summaryProvider: InMemorySummaryProvider,
+    @Inject(CONVERSATION_PROVIDER_TOKEN)
+    private readonly conversationProvider: IConversationProvider,
+    @Inject(MESSAGE_PROVIDER_TOKEN)
+    private readonly messageProvider: IMessageProvider,
+    @Inject(SUMMARY_PROVIDER_TOKEN)
+    private readonly summaryProvider: ISummaryProvider,
   ) {}
 
   async createConversation(conversation: Conversation): Promise<Conversation> {

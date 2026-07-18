@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import {
-  DocumentProcessorService,
-  ProcessedDocument,
-} from './documents/document-processor.service';
+import { DocumentProcessorService } from './documents/document-processor.service';
+import { ProcessedDocument } from './interfaces/processed-document.interface';
 import { ChunkService } from './chunking/chunk.service';
 import { IndexingService } from './indexing/indexing.service';
 import { KnowledgeRepository } from './repositories/knowledge.repository';

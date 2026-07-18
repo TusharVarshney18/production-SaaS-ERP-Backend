@@ -18,7 +18,8 @@ describe('RagService', () => {
     docRepo = new DocumentRepository();
     knowledgeRepo = new KnowledgeRepository();
     const mockProvider = new MockEmbeddingProvider();
-    const factory = new EmbeddingProviderFactory(mockProvider);
+    const factory = new EmbeddingProviderFactory();
+    factory.registerProvider(mockProvider, true);
     const ranker = new RankerService();
     const retrieval = new HybridRetrievalService(vectorStore, factory, docRepo, ranker);
 

@@ -12,6 +12,7 @@ import {
 import { PromptRegistryService } from '../../registry/prompt-registry.service';
 import { ToolRegistryService } from '../../registry/tool-registry.service';
 import { ExecutionPipelineService } from '../../tools/execution/execution-pipeline.service';
+import { generateId } from '../../constants';
 
 export abstract class BaseAgent implements IAgent {
   protected readonly logger: Logger;
@@ -122,7 +123,7 @@ export abstract class BaseAgent implements IAgent {
     dependsOn: string[] = [],
   ): AgentExecutionStep {
     return {
-      stepId: `step-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+      stepId: generateId('step'),
       toolName,
       input,
       description,

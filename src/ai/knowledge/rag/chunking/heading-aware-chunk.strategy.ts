@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { IChunkStrategy, ChunkResult } from '../interfaces/chunk-strategy.interface';
+import { estimateTokens, RAG_DEFAULT_MIN_CHUNK_SIZE, RAG_DEFAULT_MAX_CHUNK_SIZE } from '../../../constants';
 
 export interface HeadingAwareChunkOptions {
   minChunkSize?: number;
@@ -10,14 +11,11 @@ export interface HeadingAwareChunkOptions {
 export class HeadingAwareChunkStrategy implements IChunkStrategy {
   readonly name = 'heading-aware';
 
-  private readonly defaultMinChunkSize = 128;
-  private readonly defaultMaxChunkSize = 1024;
-
   constructor(private readonly options?: HeadingAwareChunkOptions) {}
 
   async chunk(text: string, metadata?: Record<string, unknown>): Promise<ChunkResult[]> {
-    const minSize = this.options?.minChunkSize ?? this.defaultMinChunkSize;
-    const maxSize = this.options?.maxChunkSize ?? this.defaultMaxChunkSize;
+    const minSize = this.options?.minChunkSize ?? RAG_DEFAULT_MIN_CHUNK_SIZE;
+    const maxSize = this.options?.maxChunkSize ?? RAG_DEFAULT_MAX_CHUNK_SIZE;
     const results: ChunkResult[] = [];
 
     const sections = this.splitByHeadings(text);
@@ -31,7 +29,7 @@ export class HeadingAwareChunkStrategy implements IChunkStrategy {
         } else if (results.length > 0) {
           const last = results[results.length - 1];
           last.content += '\n' + currentContent;
-          last.tokenEstimate = this.estimateTokens(last.content);
+          last.tokenEstimate = estimateTokens(last.content);
         }
         currentHeading = section.text;
         currentContent = '';
@@ -51,7 +49,7 @@ export class HeadingAwareChunkStrategy implements IChunkStrategy {
       } else {
         const last = results[results.length - 1];
         last.content += '\n' + currentContent;
-        last.tokenEstimate = this.estimateTokens(last.content);
+        last.tokenEstimate = estimateTokens(last.content);
       }
     }
 
@@ -94,11 +92,11 @@ export class HeadingAwareChunkStrategy implements IChunkStrategy {
         ...baseMetadata,
         heading: heading || '(root)',
       },
-      tokenEstimate: this.estimateTokens(fullContent),
+      tokenEstimate: estimateTokens(fullContent),
     };
   }
 
   estimateTokens(text: string): number {
-    return Math.ceil(text.length / 4);
+    return estimateTokens(text);
   }
 }

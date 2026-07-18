@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MemoryRepository } from '../repositories/memory.repository';
 import { MemoryEntry, MemoryType } from '../interfaces/conversation.interface';
+import { generateId } from '../../constants';
 
 @Injectable()
 export class LongTermMemoryService {
@@ -21,7 +22,7 @@ export class LongTermMemoryService {
   }): Promise<MemoryEntry> {
     const now = new Date().toISOString();
     const entry: MemoryEntry = {
-      id: `mem-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId('mem'),
       organizationId: params.organizationId,
       userId: params.scope === 'user' ? params.userId : undefined,
       type: params.type,

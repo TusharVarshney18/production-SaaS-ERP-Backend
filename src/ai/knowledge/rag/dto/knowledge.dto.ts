@@ -7,11 +7,3 @@ export interface KnowledgeStats {
   failedDocuments: number;
   storageEstimateBytes: number;
 }
-
-export interface KnowledgeSummary {
-  documentId: string;
-  documentName: string;
-  version: number;
-  chunkCount: number;
-  status: string;
-}

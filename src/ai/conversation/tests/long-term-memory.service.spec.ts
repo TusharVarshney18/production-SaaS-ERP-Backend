@@ -2,13 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LongTermMemoryService } from '../services/long-term-memory.service';
 import { MemoryRepository } from '../repositories/memory.repository';
 import { InMemoryMemoryStorageProvider } from '../providers/in-memory.provider';
+import { MEMORY_STORAGE_PROVIDER_TOKEN } from '../providers/tokens';
 
 describe('LongTermMemoryService', () => {
   let service: LongTermMemoryService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [LongTermMemoryService, MemoryRepository, InMemoryMemoryStorageProvider],
+      providers: [
+        LongTermMemoryService,
+        MemoryRepository,
+        InMemoryMemoryStorageProvider,
+        {
+          provide: MEMORY_STORAGE_PROVIDER_TOKEN,
+          useExisting: InMemoryMemoryStorageProvider,
+        },
+      ],
     }).compile();
 
     service = module.get<LongTermMemoryService>(LongTermMemoryService);

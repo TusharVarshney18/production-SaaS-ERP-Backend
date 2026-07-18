@@ -40,11 +40,9 @@ export class ProviderFactory {
   getByCapability(capability: 'chat' | 'embedding' | 'tools'): IProvider[] {
     const results: IProvider[] = [];
     for (const provider of this.providers.values()) {
-      if (capability === 'embedding') {
-        if (provider.name !== 'claude' && provider.name !== 'bedrock') {
-          results.push(provider);
-        }
-      } else {
+      if (capability === 'chat' || capability === 'tools') {
+        results.push(provider);
+      } else if (provider.models.some((m) => m.toLowerCase().includes('embedding') || m.toLowerCase().includes('embed'))) {
         results.push(provider);
       }
     }

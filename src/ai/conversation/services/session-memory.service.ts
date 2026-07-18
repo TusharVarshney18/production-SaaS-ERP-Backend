@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SessionState, ConversationMessage } from '../interfaces/conversation.interface';
+import { DEFAULT_CONTEXT_LIMIT, DEFAULT_MAX_MESSAGES } from '../../constants';
 
 @Injectable()
 export class SessionMemoryService {
   private readonly logger = new Logger(SessionMemoryService.name);
   private readonly sessions = new Map<string, SessionState>();
-  private readonly defaultMaxTokens = 8192;
 
   createSession(
     conversationId: string,
@@ -20,7 +20,7 @@ export class SessionMemoryService {
       lastMessages: [],
       temporaryVariables: new Map(),
       contextTokens: 0,
-      maxContextTokens: maxContextTokens || this.defaultMaxTokens,
+      maxContextTokens: maxContextTokens || DEFAULT_CONTEXT_LIMIT,
       startedAt: new Date().toISOString(),
       lastActivityAt: new Date().toISOString(),
     };
@@ -56,7 +56,7 @@ export class SessionMemoryService {
     session.lastMessages.push(message);
     session.contextTokens += message.tokenCount;
 
-    if (session.lastMessages.length > 50) {
+    if (session.lastMessages.length > DEFAULT_MAX_MESSAGES) {
       const removed = session.lastMessages.shift()!;
       session.contextTokens = Math.max(0, session.contextTokens - (removed.tokenCount || 0));
     }

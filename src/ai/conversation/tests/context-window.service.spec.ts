@@ -4,7 +4,9 @@ import { SessionMemoryService } from '../services/session-memory.service';
 import { LongTermMemoryService } from '../services/long-term-memory.service';
 import { MemoryRepository } from '../repositories/memory.repository';
 import { InMemoryMemoryStorageProvider } from '../providers/in-memory.provider';
+import { MEMORY_STORAGE_PROVIDER_TOKEN } from '../providers/tokens';
 import { ConversationMessage } from '../interfaces/conversation.interface';
+import { estimateTokens } from '../../constants';
 
 describe('ContextWindowService', () => {
   let service: ContextWindowService;
@@ -18,6 +20,10 @@ describe('ContextWindowService', () => {
         LongTermMemoryService,
         MemoryRepository,
         InMemoryMemoryStorageProvider,
+        {
+          provide: MEMORY_STORAGE_PROVIDER_TOKEN,
+          useExisting: InMemoryMemoryStorageProvider,
+        },
       ],
     }).compile();
 
@@ -78,9 +84,9 @@ describe('ContextWindowService', () => {
   });
 
   it('should estimate token count', () => {
-    expect(service.estimateTokenCount('Hello world')).toBe(3);
-    expect(service.estimateTokenCount('')).toBe(0);
-    expect(service.estimateTokenCount('A'.repeat(100))).toBe(25);
+    expect(estimateTokens('Hello world')).toBe(3);
+    expect(estimateTokens('')).toBe(0);
+    expect(estimateTokens('A'.repeat(100))).toBe(25);
   });
 
   it('should trim messages correctly', () => {
