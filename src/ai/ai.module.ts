@@ -55,10 +55,11 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { KnowledgeModule } from './knowledge/rag/knowledge.module';
 import { MCPModule } from './mcp/mcp.module';
 import { MultiAgentModule } from './multi-agent/multi-agent.module';
+import { QueueModule } from './queue/queue.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule, MultiAgentModule],
+  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule, MultiAgentModule, QueueModule],
   controllers: [AIController],
   providers: [
     ProviderFactory,
@@ -145,6 +146,7 @@ import aiConfig from './config/ai.config';
     KnowledgeModule,
     MCPModule,
     MultiAgentModule,
+    QueueModule,
   ],
 })
 export class AiModule implements OnModuleInit {

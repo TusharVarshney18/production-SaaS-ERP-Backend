@@ -1,0 +1,16 @@
+export const QUEUE_EVENTS = {
+  JOB_ENQUEUED: 'queue:job:enqueued',
+  JOB_STARTED: 'queue:job:started',
+  JOB_COMPLETED: 'queue:job:completed',
+  JOB_FAILED: 'queue:job:failed',
+  JOB_CANCELLED: 'queue:job:cancelled',
+  JOB_PROGRESS: 'queue:job:progress',
+  JOB_DELAYED: 'queue:job:delayed',
+  WORKER_REGISTERED: 'queue:worker:registered',
+  WORKER_HEARTBEAT: 'queue:worker:heartbeat',
+  WORKER_STOPPED: 'queue:worker:stopped',
+  QUEUE_PAUSED: 'queue:paused',
+  QUEUE_RESUMED: 'queue:resumed',
+  DLQ_ENTRY_ADDED: 'queue:dlq:added',
+  DLQ_ENTRY_RETRIED: 'queue:dlq:retried',
+} as const;
