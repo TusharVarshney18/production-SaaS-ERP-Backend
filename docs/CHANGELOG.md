@@ -4,6 +4,27 @@
 
 ---
 
+## Sprint 12.3 — 2026-07-17
+
+### Enterprise AI Agent Framework
+
+- **Agent Interface**: `IAgent` contract with execute(), plan(), validate(), canHandle(); AgentMetadata, AgentCapability, AgentExecutionPlan/Step, AgentRequest/Response types
+- **Agent Registry**: Map-based dynamic registration with findBestMatch() using confidence × priority scoring; findByCapability/Tool/Provider; deduplicated capability listing
+- **Agent Factory**: Dynamic agent resolution with DI support; explicit `agentName` or best-match fallback
+- **Agent Router**: Request → best agent + capability match → execution plan → context enrichment from CapabilityRegistry
+- **Agent Planner**: Plan creation, validation (tool existence, dependency integrity), complexity estimation (simple/medium/complex)
+- **Agent Executor**: Full orchestration — route → validate plan → execute steps through ExecutionPipeline → collect results → structured AgentResponse
+- **Context Builder**: Builds ExecutionContext with available tools, capabilities, providers, temperature, streaming config
+- **Base Agent**: Abstract class with validate(), execute() pipeline, createStep(), getPromptVariables(); 7 domain agents extend it
+- **7 Domain Agents**: CEO (executive oversight), Finance (revenue/invoices/reports), Sales (quotations/orders/customers), Inventory (stock/warehouses/transfers), HR (employees/attendance/leave), Reporting (cross-domain exports), Developer (system health/API/audit)
+- **58 new unit tests** across 7 test suites
+- Reuses Sprint 12.1 (providers, config, health) and Sprint 12.2 (PromptRegistry, ToolRegistry, CapabilityRegistry, Sandbox, Pipeline, Permission) — zero duplication
+- No Prisma access in agents — all execution through registered AI Tools via Execution Pipeline
+
+**Tests:** 988 total (+58) | **Status:** ✅ Build, ✅ Lint (0 errors), ✅ Prisma Validate
+
+---
+
 ## Sprint 12.2 — 2026-07-17
 
 ### Enterprise AI Core Runtime

@@ -1,7 +1,7 @@
 # ERPX — Project Progress
 
 > **Last Updated:** 2026-07-17  
-> **Status:** Active Development — Sprint 12.2
+> **Status:** Active Development — Sprint 12.3
 
 ---
 
@@ -36,22 +36,23 @@
 | Workflow Automation Engine | ✅ Complete | Sprint 11 | 768 |
 | AI Platform Foundation | ✅ Complete | Sprint 12.1 | 828 |
 | **AI Core Runtime** | **✅ Complete** | **Sprint 12.2** | **930** |
+| **AI Agent Framework** | **✅ Complete** | **Sprint 12.3** | **988** |
 
 ---
 
 ## Current Sprint
 
-**Sprint 12.2 — Enterprise AI Core Runtime**
+**Sprint 12.3 — Enterprise AI Agent Framework**
 
-- [x] Prompt Registry (register, load, version, interpolation, validation, caching)
-- [x] Capability Registry (tools, models, providers, temperature, streaming)
-- [x] Tool Registry (AITool interface, registration, discovery, DI)
-- [x] AI Sandbox (validation, org isolation, RBAC, audit, masking, timeout)
-- [x] AI Permission Service (RBAC delegation, organization isolation)
-- [x] Tool Execution Pipeline (registry → sandbox → permission → execute → audit)
-- [x] Metadata Service (reflection-based decorator reader)
-- [x] Decorators (@AITool, @Capability, @AIPermission, @AIMetadata, @ProviderSupport)
-- [x] 102 comprehensive unit tests
+- [x] Agent Interface (IAgent with execute/plan/validate/canHandle)
+- [x] Agent Registry (Map-based registration, best-match with confidence×priority)
+- [x] Agent Factory (dynamic resolution, DI support, explicit or match-based)
+- [x] Agent Router (request → best agent → capability → plan)
+- [x] Agent Planner (plan creation, validation, complexity estimation)
+- [x] Agent Executor (full pipeline orchestration with dependency ordering)
+- [x] Context Builder (org, user, tools, capabilities, providers in context)
+- [x] 7 Domain Agents (CEO, Finance, Sales, Inventory, HR, Reporting, Developer)
+- [x] 58 comprehensive unit tests
 - [x] Sprint documentation generated
 
 ---
@@ -61,7 +62,7 @@
 | Metric | Value |
 |---|---|
 | Total Test Suites | 82 |
-| Total Tests | 930 |
+| Total Tests | 988 |
 | Test Coverage | 100% passing |
 | CI Status | ✅ Build, Lint, Test, Prisma Validate |
 
@@ -73,7 +74,7 @@
 |---|---|
 | `npm run build` | ✅ Pass |
 | `npm run lint` | ✅ Pass (0 errors, 14 pre-existing `any` warnings) |
-| `npm test` | ✅ 930/930 Passed |
+| `npm test` | ✅ 988/988 Passed |
 | `npx prisma validate` | ✅ Valid |
 
 ---
@@ -120,4 +121,5 @@ Planned scope:
 | M13 — Workflow Automation | Sprint 11 | ✅ Achieved |
 | M14 — AI Platform Foundation | Sprint 12.1 | ✅ Achieved |
 | M15 — AI Core Runtime | Sprint 12.2 | ✅ Achieved |
-| M16 — AI Agents & Tools | Sprint 13 | 🔜 Planned |
+| M16 — AI Agent Framework | Sprint 12.3 | ✅ Achieved |
+| M17 — AI Agents & Tools | Sprint 13 | 🔜 Planned |

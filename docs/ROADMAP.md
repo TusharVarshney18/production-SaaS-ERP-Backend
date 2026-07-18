@@ -199,6 +199,17 @@
 - ✅ Decorators (@AITool, @Capability, @AIPermission, @AIMetadata, @ProviderSupport)
 - ✅ 102 tests, 930 total
 
+### Sprint 12.3 — AI Agent Framework
+- ✅ Agent Interface (IAgent with execute/plan/validate/canHandle)
+- ✅ Agent Registry (Map-based, best-match with confidence×priority scoring)
+- ✅ Agent Factory (dynamic resolution, DI support)
+- ✅ Agent Router (request → best agent → capability → plan)
+- ✅ Agent Planner (creation, validation, complexity estimation)
+- ✅ Agent Executor (full pipeline orchestration)
+- ✅ Context Builder (org, user, tools, capabilities, providers in context)
+- ✅ 7 Domain Agents (CEO, Finance, Sales, Inventory, HR, Reporting, Developer)
+- ✅ 58 tests, 988 total
+
 ---
 
 ## Phase 9: AI Agents & Features 🔜 (Next)
@@ -230,6 +241,6 @@ Phase 5: CRM                   ████████████████�
 Phase 6: Inventory/Procurement ████████████████████████████████  Sprint 6-7     ✅
 Phase 7: Accounting/HRMS       ████████████████████████████████  Sprint 8-9     ✅
 Phase 8: Reports/Workflows/AI  ████████████████████████████████  Sprint 10-12   ✅
-Phase 9: AI Agents             ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 13     🔜
+Phase 9: AI Agents             ████████████████████████████████  Sprint 12.3    ✅
 Phase 10: Enterprise           ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Sprint 14     📋
 ```
