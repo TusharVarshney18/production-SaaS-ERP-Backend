@@ -1,0 +1,10 @@
+export { IMCPTransport, TransportOptions, TransportStats } from './transport.interface';
+export { IMCPServer, ServerCapabilities, ServerInfo } from './server.interface';
+export { IMCPClient, ClientInfo, ClientCapabilities } from './client.interface';
+export { IMCPAuthProvider, AuthCredentials, AuthResult } from './auth-provider.interface';
+export { IMCPConnectionProvider } from './connection-provider.interface';
+export { IMCPToolExecutor, MCPToolDefinition, MCPToolResult } from './tool-executor.interface';
+export { IMCPSessionManager, SessionInfo, SessionConfig } from './session.interface';
+export { IMCPRegistry } from './registry.interface';
+export { IMCPDiscoveryService, DiscoveryResult } from './discovery.interface';
+export { MCPError, MCPErrorCode } from './mcp-error.interface';

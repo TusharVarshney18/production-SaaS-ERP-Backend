@@ -53,10 +53,11 @@ import { ContextWindowService } from './conversation/services/context-window.ser
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { KnowledgeModule } from './knowledge/rag/knowledge.module';
+import { MCPModule } from './mcp/mcp.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule],
+  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule],
   controllers: [AIController],
   providers: [
     ProviderFactory,
@@ -141,6 +142,7 @@ import aiConfig from './config/ai.config';
     LongTermMemoryService,
     ContextWindowService,
     KnowledgeModule,
+    MCPModule,
   ],
 })
 export class AiModule implements OnModuleInit {
