@@ -16,9 +16,20 @@ export { WebSocketTransport } from './transport/websocket.transport';
 export { IMCPTransport, TransportOptions, TransportStats } from './interfaces/transport.interface';
 export { IMCPServer, ServerCapabilities, ServerInfo } from './interfaces/server.interface';
 export { IMCPClient, ClientInfo, ClientCapabilities } from './interfaces/client.interface';
-export { IMCPAuthProvider, AuthCredentials, AuthResult } from './interfaces/auth-provider.interface';
-export { IMCPConnectionProvider, ConnectionConfig } from './interfaces/connection-provider.interface';
-export { IMCPToolExecutor, MCPToolDefinition, MCPToolResult } from './interfaces/tool-executor.interface';
+export {
+  IMCPAuthProvider,
+  AuthCredentials,
+  AuthResult,
+} from './interfaces/auth-provider.interface';
+export {
+  IMCPConnectionProvider,
+  ConnectionConfig,
+} from './interfaces/connection-provider.interface';
+export {
+  IMCPToolExecutor,
+  MCPToolDefinition,
+  MCPToolResult,
+} from './interfaces/tool-executor.interface';
 export { IMCPSessionManager, SessionInfo, SessionConfig } from './interfaces/session.interface';
 export { IMCPRegistry, RegisteredServer } from './interfaces/registry.interface';
 export { IMCPDiscoveryService, DiscoveryResult } from './interfaces/discovery.interface';

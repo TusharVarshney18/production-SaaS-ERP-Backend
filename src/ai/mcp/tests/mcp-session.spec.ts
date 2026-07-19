@@ -10,7 +10,17 @@ describe('MCPSessionManager', () => {
     registry = new MCPServerRegistry();
     sessionManager = new MCPSessionManager(registry);
     mockServer = {
-      info: { name: 'test', version: '1.0.0', capabilities: { tools: true, resources: true, prompts: true, streaming: false, logging: false } },
+      info: {
+        name: 'test',
+        version: '1.0.0',
+        capabilities: {
+          tools: true,
+          resources: true,
+          prompts: true,
+          streaming: false,
+          logging: false,
+        },
+      },
       connect: jest.fn().mockResolvedValue(undefined),
       disconnect: jest.fn().mockResolvedValue(undefined),
       listTools: jest.fn().mockResolvedValue([]),

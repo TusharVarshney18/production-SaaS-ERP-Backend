@@ -20,10 +20,7 @@ export class MCPTransportFactory {
       case 'websocket':
         return new WebSocketTransport(options);
       default:
-        throw new MCPError(
-          `Unsupported transport type: ${type}`,
-          MCPErrorCode.TRANSPORT_ERROR,
-        );
+        throw new MCPError(`Unsupported transport type: ${type}`, MCPErrorCode.TRANSPORT_ERROR);
     }
   }
 

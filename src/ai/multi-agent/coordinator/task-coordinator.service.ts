@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ITaskCoordinator, CoordinationRequest, CoordinationResult, SubTaskResult } from '../interfaces/coordinator.interface';
-import { TaskPlan, SubTask } from '../interfaces/planner.interface';
+import {
+  ITaskCoordinator,
+  CoordinationRequest,
+  CoordinationResult,
+  SubTaskResult,
+} from '../interfaces/coordinator.interface';
+import { SubTask } from '../interfaces/planner.interface';
 import { ExecutionContext } from '../../execution/execution-context';
 import { AgentExecutorService } from '../../agents/executor/agent-executor.service';
-import { AgentRequest } from '../../agents/interfaces/agent.interface';
 import { TaskPlannerService } from '../planner/task-planner.service';
 import { TaskDelegationService } from '../delegation/task-delegation.service';
 import { SharedMemoryService } from '../shared-memory/shared-memory.service';
@@ -55,17 +59,13 @@ export class TaskCoordinator implements ITaskCoordinator {
         for (const result of levelResults) {
           if (result) {
             allResults.push(result);
-            await this.sharedMemory.set(
-              `subtask:${result.subtaskId}`,
-              result,
-              {
-                organizationId: context.organizationId,
-                workflowId: planId,
-                scope: 'task',
-                tags: ['subtask', result.subtaskId],
-                createdBy: result.agentName,
-              },
-            );
+            await this.sharedMemory.set(`subtask:${result.subtaskId}`, result, {
+              organizationId: context.organizationId,
+              workflowId: planId,
+              scope: 'task',
+              tags: ['subtask', result.subtaskId],
+              createdBy: result.agentName,
+            });
           }
         }
 

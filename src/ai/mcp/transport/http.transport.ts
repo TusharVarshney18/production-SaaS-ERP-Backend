@@ -25,7 +25,10 @@ export class HttpTransport extends BaseTransport {
         signal: AbortSignal.timeout(this.options.timeout || 5000),
       });
       if (!response.ok) {
-        throw new MCPError(`HTTP health check failed: ${response.statusText}`, MCPErrorCode.CONNECTION_FAILED);
+        throw new MCPError(
+          `HTTP health check failed: ${response.statusText}`,
+          MCPErrorCode.CONNECTION_FAILED,
+        );
       }
       this._connected = true;
       this.stats.connectTime = Date.now() - startTime;
@@ -71,7 +74,10 @@ export class HttpTransport extends BaseTransport {
       }
     } catch (error) {
       this.handleError(
-        new MCPError(`HTTP request failed: ${(error as Error).message}`, MCPErrorCode.TRANSPORT_ERROR),
+        new MCPError(
+          `HTTP request failed: ${(error as Error).message}`,
+          MCPErrorCode.TRANSPORT_ERROR,
+        ),
       );
     }
   }

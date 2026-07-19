@@ -5,8 +5,7 @@ import { MCPServerRegistry } from '../registry/mcp-server.registry';
 import { MCPTransportFactory, TransportType } from '../transport/mcp-transport.factory';
 import { MCPAuthProviderFactory } from '../authentication/mcp-auth-provider.factory';
 import { MCPServerAdapter } from '../server/mcp-server.adapter';
-import { IMCPTransport } from '../interfaces/transport.interface';
-import { IMCPAuthProvider, AuthCredentials } from '../interfaces/auth-provider.interface';
+import { AuthCredentials } from '../interfaces/auth-provider.interface';
 import { MCPServerConfig } from '../dto/config.dto';
 import { MCPError, MCPErrorCode } from '../interfaces/mcp-error.interface';
 
@@ -28,10 +27,7 @@ export class MCPClientService implements IMCPClient {
   async connect(serverId: string): Promise<void> {
     const registered = this.registry.getServer(serverId, '');
     if (!registered) {
-      throw new MCPError(
-        `Server "${serverId}" not found in registry`,
-        MCPErrorCode.NOT_FOUND,
-      );
+      throw new MCPError(`Server "${serverId}" not found in registry`, MCPErrorCode.NOT_FOUND);
     }
     this._connected = true;
     this.logger.log(`MCP client connected to server: ${serverId}`);
@@ -94,13 +90,14 @@ export class MCPClientService implements IMCPClient {
 
   async registerServer(config: MCPServerConfig): Promise<IMCPServer> {
     const transportType = config.transportType as TransportType;
-    const createTransport = () => this.transportFactory.createTransport(transportType, {
-      url: config.transportOptions.url,
-      command: config.transportOptions.command,
-      args: config.transportOptions.args,
-      timeout: config.transportOptions.timeout,
-      headers: config.transportOptions.headers,
-    });
+    const createTransport = () =>
+      this.transportFactory.createTransport(transportType, {
+        url: config.transportOptions.url,
+        command: config.transportOptions.command,
+        args: config.transportOptions.args,
+        timeout: config.transportOptions.timeout,
+        headers: config.transportOptions.headers,
+      });
 
     const getAuthProvider = config.auth
       ? () => {
@@ -113,10 +110,11 @@ export class MCPClientService implements IMCPClient {
       : undefined;
 
     const getCredentials = config.auth
-      ? () => ({
-          type: config.auth!.type as AuthCredentials['type'],
-          value: Object.values(config.auth!.credentials).join(':'),
-        } as AuthCredentials)
+      ? () =>
+          ({
+            type: config.auth!.type as AuthCredentials['type'],
+            value: Object.values(config.auth!.credentials).join(':'),
+          }) as AuthCredentials
       : undefined;
 
     const serverInfo = {
@@ -150,16 +148,10 @@ export class MCPClientService implements IMCPClient {
   private getServer(serverId: string): IMCPServer {
     const registered = this.registry.getServer(serverId, '');
     if (!registered) {
-      throw new MCPError(
-        `MCP server "${serverId}" not registered`,
-        MCPErrorCode.NOT_FOUND,
-      );
+      throw new MCPError(`MCP server "${serverId}" not registered`, MCPErrorCode.NOT_FOUND);
     }
     if (!registered.server) {
-      throw new MCPError(
-        `MCP server "${serverId}" not connected`,
-        MCPErrorCode.CONNECTION_FAILED,
-      );
+      throw new MCPError(`MCP server "${serverId}" not connected`, MCPErrorCode.CONNECTION_FAILED);
     }
     return registered.server;
   }

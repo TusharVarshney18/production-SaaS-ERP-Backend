@@ -82,7 +82,9 @@ export class MCPSessionManager implements IMCPSessionManager {
         await registered.server.disconnect();
       }
     } catch (error) {
-      this.logger.warn(`Error disconnecting server for session ${sessionId}: ${(error as Error).message}`);
+      this.logger.warn(
+        `Error disconnecting server for session ${sessionId}: ${(error as Error).message}`,
+      );
     }
 
     session.status = 'disconnected';

@@ -1,6 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { InMemoryQueueProvider } from './providers/in-memory-queue.provider';
-import { IQueueProvider } from './interfaces/queue-provider.interface';
 import { JobPersistenceService } from './persistence/job-persistence.service';
 import { RetryManager } from './retry/retry.manager';
 import { DeadLetterManager } from './dead-letter/dead-letter.manager';

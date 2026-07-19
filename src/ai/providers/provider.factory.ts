@@ -42,7 +42,11 @@ export class ProviderFactory {
     for (const provider of this.providers.values()) {
       if (capability === 'chat' || capability === 'tools') {
         results.push(provider);
-      } else if (provider.models.some((m) => m.toLowerCase().includes('embedding') || m.toLowerCase().includes('embed'))) {
+      } else if (
+        provider.models.some(
+          (m) => m.toLowerCase().includes('embedding') || m.toLowerCase().includes('embed'),
+        )
+      ) {
         results.push(provider);
       }
     }

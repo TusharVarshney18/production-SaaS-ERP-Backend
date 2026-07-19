@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IAgentOrchestrator, OrchestrationRequest, OrchestrationResult } from '../interfaces/orchestrator.interface';
+import {
+  IAgentOrchestrator,
+  OrchestrationRequest,
+  OrchestrationResult,
+} from '../interfaces/orchestrator.interface';
 import { TaskPlannerService } from '../planner/task-planner.service';
 import { TaskCoordinator } from '../coordinator/task-coordinator.service';
 import { TaskDelegationService } from '../delegation/task-delegation.service';
@@ -8,13 +12,15 @@ import { ConsensusEngine } from '../consensus/consensus.engine';
 import { SharedMemoryService } from '../shared-memory/shared-memory.service';
 import { AgentRegistryService } from '../../agents/registry/agent-registry.service';
 import { AgentRequest } from '../../agents/interfaces/agent.interface';
-import { ExecutionContext } from '../../execution/execution-context';
 import { WorkflowDefinition, WorkflowStep } from '../interfaces/workflow.interface';
 
 @Injectable()
 export class AgentOrchestrator implements IAgentOrchestrator {
   private readonly logger = new Logger(AgentOrchestrator.name);
-  private readonly activeRequests = new Map<string, { organizationId: string; startedAt: string }>();
+  private readonly activeRequests = new Map<
+    string,
+    { organizationId: string; startedAt: string }
+  >();
 
   constructor(
     private readonly planner: TaskPlannerService,
@@ -104,7 +110,10 @@ export class AgentOrchestrator implements IAgentOrchestrator {
     }
   }
 
-  async orchestrateWithAgents(request: OrchestrationRequest, agentNames: string[]): Promise<OrchestrationResult> {
+  async orchestrateWithAgents(
+    request: OrchestrationRequest,
+    agentNames: string[],
+  ): Promise<OrchestrationResult> {
     const startTime = Date.now();
     const requestId = request.context.requestId;
 
@@ -218,7 +227,8 @@ export class AgentOrchestrator implements IAgentOrchestrator {
 
     const context = this.workflowManager.getWorkflowStatus(requestId);
     const agentResults = steps.map((s) => {
-      const stepResult = context?.stepResults.get(s.id) as { success?: boolean; summary?: string; duration?: number } | undefined;
+      const stepResult = context?.stepResults.get(s.id) as
+        { success?: boolean; summary?: string; duration?: number } | undefined;
       return {
         agentName: s.agentName || 'unknown',
         success: stepResult?.success !== false,

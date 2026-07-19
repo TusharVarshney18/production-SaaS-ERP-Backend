@@ -1,4 +1,3 @@
-import { AgentRequest } from '../../agents/interfaces/agent.interface';
 import { ExecutionContext } from '../../execution/execution-context';
 
 export interface OrchestrationRequest {
@@ -31,7 +30,10 @@ export interface OrchestrationResult {
 
 export interface IAgentOrchestrator {
   orchestrate(request: OrchestrationRequest): Promise<OrchestrationResult>;
-  orchestrateWithAgents(request: OrchestrationRequest, agentNames: string[]): Promise<OrchestrationResult>;
+  orchestrateWithAgents(
+    request: OrchestrationRequest,
+    agentNames: string[],
+  ): Promise<OrchestrationResult>;
   cancel(organizationId: string, requestId: string): Promise<boolean>;
   getActiveOrchestrations(organizationId: string): string[];
 }

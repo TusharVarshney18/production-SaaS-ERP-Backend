@@ -30,10 +30,7 @@ export class MCPAuthProviderFactory {
   getProvider(name: string): IMCPAuthProvider {
     const provider = this.providers.get(name);
     if (!provider) {
-      throw new MCPError(
-        `Auth provider "${name}" not found`,
-        MCPErrorCode.NOT_FOUND,
-      );
+      throw new MCPError(`Auth provider "${name}" not found`, MCPErrorCode.NOT_FOUND);
     }
     return provider;
   }

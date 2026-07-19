@@ -8,10 +8,14 @@ describe('SharedMemoryService', () => {
   });
 
   it('should set and get memory', async () => {
-    await service.set('test-key', { data: 'value' }, {
-      organizationId: 'org-1',
-      createdBy: 'test',
-    });
+    await service.set(
+      'test-key',
+      { data: 'value' },
+      {
+        organizationId: 'org-1',
+        createdBy: 'test',
+      },
+    );
     const entry = await service.get('org-1', 'test-key');
     expect(entry).toBeDefined();
     expect(entry!.value).toEqual({ data: 'value' });
@@ -30,7 +34,11 @@ describe('SharedMemoryService', () => {
   });
 
   it('should query by tags', async () => {
-    await service.set('k1', 'v1', { organizationId: 'org-1', tags: ['important'], createdBy: 'test' });
+    await service.set('k1', 'v1', {
+      organizationId: 'org-1',
+      tags: ['important'],
+      createdBy: 'test',
+    });
     await service.set('k2', 'v2', { organizationId: 'org-1', tags: ['normal'], createdBy: 'test' });
     const results = await service.query({ organizationId: 'org-1', tags: ['important'] });
     expect(results.length).toBe(1);
@@ -44,9 +52,21 @@ describe('SharedMemoryService', () => {
   });
 
   it('should clear workflow memory', async () => {
-    await service.set('k1', 'v1', { organizationId: 'org-1', workflowId: 'wf-1', createdBy: 'test' });
-    await service.set('k2', 'v2', { organizationId: 'org-1', workflowId: 'wf-1', createdBy: 'test' });
-    await service.set('k3', 'v3', { organizationId: 'org-1', workflowId: 'wf-2', createdBy: 'test' });
+    await service.set('k1', 'v1', {
+      organizationId: 'org-1',
+      workflowId: 'wf-1',
+      createdBy: 'test',
+    });
+    await service.set('k2', 'v2', {
+      organizationId: 'org-1',
+      workflowId: 'wf-1',
+      createdBy: 'test',
+    });
+    await service.set('k3', 'v3', {
+      organizationId: 'org-1',
+      workflowId: 'wf-2',
+      createdBy: 'test',
+    });
     expect(await service.clearWorkflowMemory('org-1', 'wf-1')).toBe(2);
   });
 

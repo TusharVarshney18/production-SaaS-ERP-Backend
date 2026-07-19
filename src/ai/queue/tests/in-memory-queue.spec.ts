@@ -1,5 +1,5 @@
 import { InMemoryQueueProvider } from '../providers/in-memory-queue.provider';
-import { JobDefinition, JobPriority } from '../dto/job.dto';
+import { JobDefinition } from '../dto/job.dto';
 
 describe('InMemoryQueueProvider', () => {
   let provider: InMemoryQueueProvider;

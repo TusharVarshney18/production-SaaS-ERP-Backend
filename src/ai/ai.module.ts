@@ -59,7 +59,15 @@ import { QueueModule } from './queue/queue.module';
 import aiConfig from './config/ai.config';
 
 @Module({
-  imports: [ConfigModule.forFeature(aiConfig), AuthorizationModule, AuditLogModule, KnowledgeModule, MCPModule, MultiAgentModule, QueueModule],
+  imports: [
+    ConfigModule.forFeature(aiConfig),
+    AuthorizationModule,
+    AuditLogModule,
+    KnowledgeModule,
+    MCPModule,
+    MultiAgentModule,
+    QueueModule,
+  ],
   controllers: [AIController],
   providers: [
     ProviderFactory,

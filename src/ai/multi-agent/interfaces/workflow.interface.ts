@@ -1,6 +1,5 @@
-import { AgentRequest, AgentResponse } from '../../agents/interfaces/agent.interface';
 import { ExecutionContext } from '../../execution/execution-context';
-import { SubTask, TaskPriority } from './planner.interface';
+import { TaskPriority } from './planner.interface';
 
 export type WorkflowType = 'pipeline' | 'tree' | 'dag';
 

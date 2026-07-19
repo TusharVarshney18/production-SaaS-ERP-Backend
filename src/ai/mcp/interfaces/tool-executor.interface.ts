@@ -26,7 +26,7 @@ export function mcpToolToAIToolParams(tool: MCPToolDefinition): ToolParameter[] 
   if (!tool.inputSchema?.properties) return [];
   return Object.entries(tool.inputSchema.properties).map(([name, schema]: [string, any]) => ({
     name,
-    type: schema.type === 'integer' ? 'number' : (schema.type || 'string'),
+    type: schema.type === 'integer' ? 'number' : schema.type || 'string',
     required: (tool.inputSchema.required || []).includes(name),
     description: schema.description || '',
   }));

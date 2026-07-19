@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ITaskDelegationService, DelegationRequest, DelegationResult, AgentWorkload } from '../interfaces/delegation.interface';
+import {
+  ITaskDelegationService,
+  DelegationRequest,
+  DelegationResult,
+  AgentWorkload,
+} from '../interfaces/delegation.interface';
 import { AgentRegistryService } from '../../agents/registry/agent-registry.service';
 import { AgentExecutorService } from '../../agents/executor/agent-executor.service';
 import { AgentRequest } from '../../agents/interfaces/agent.interface';
-import { MCPError, MCPErrorCode } from '../../mcp/interfaces/mcp-error.interface';
 
 @Injectable()
 export class TaskDelegationService implements ITaskDelegationService {
@@ -17,7 +21,8 @@ export class TaskDelegationService implements ITaskDelegationService {
 
   async delegate(request: DelegationRequest): Promise<DelegationResult> {
     const startTime = Date.now();
-    const agentName = request.preferredAgent ||
+    const agentName =
+      request.preferredAgent ||
       (await this.findBestAgent(request.requiredCapability || '', request.context));
 
     if (!agentName) {
@@ -91,7 +96,10 @@ export class TaskDelegationService implements ITaskDelegationService {
     }
   }
 
-  async findBestAgent(requiredCapability: string, context: import('../../execution/execution-context').ExecutionContext): Promise<string | null> {
+  async findBestAgent(
+    requiredCapability: string,
+    _context: import('../../execution/execution-context').ExecutionContext,
+  ): Promise<string | null> {
     const agents = this.agentRegistry.getAll();
 
     if (requiredCapability) {
@@ -120,10 +128,11 @@ export class TaskDelegationService implements ITaskDelegationService {
     this.workloads.delete(agentName);
   }
 
-  private async findFallbackAgent(excludeAgent: string, context: import('../../execution/execution-context').ExecutionContext): Promise<string | null> {
-    const agents = this.agentRegistry
-      .getAll()
-      .filter((a) => a.metadata.name !== excludeAgent);
+  private async findFallbackAgent(
+    excludeAgent: string,
+    _context: import('../../execution/execution-context').ExecutionContext,
+  ): Promise<string | null> {
+    const agents = this.agentRegistry.getAll().filter((a) => a.metadata.name !== excludeAgent);
 
     if (agents.length === 0) return null;
     return this.sortByWorkload(agents.map((a) => a.metadata.name))[0] || null;

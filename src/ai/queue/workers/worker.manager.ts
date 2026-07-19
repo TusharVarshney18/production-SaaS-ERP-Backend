@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IWorker, WorkerConfig, WorkerStatus, WorkerHeartbeat } from '../interfaces/worker.interface';
+import { IWorker, WorkerStatus, WorkerHeartbeat } from '../interfaces/worker.interface';
 
 @Injectable()
 export class WorkerManager {
@@ -10,7 +10,9 @@ export class WorkerManager {
 
   registerWorker(worker: IWorker): void {
     this.workers.set(worker.config.workerId, worker);
-    this.logger.log(`Worker registered: ${worker.config.workerId} (${worker.config.jobTypes.join(', ')})`);
+    this.logger.log(
+      `Worker registered: ${worker.config.workerId} (${worker.config.jobTypes.join(', ')})`,
+    );
   }
 
   unregisterWorker(workerId: string): boolean {
@@ -44,8 +46,7 @@ export class WorkerManager {
 
   getAvailableWorkers(jobType: string): WorkerStatus[] {
     return this.listWorkers().filter(
-      (w) =>
-        w.status === 'idle' && w.activeJobs < w.maxConcurrency && w.jobTypes.includes(jobType),
+      (w) => w.status === 'idle' && w.activeJobs < w.maxConcurrency && w.jobTypes.includes(jobType),
     );
   }
 

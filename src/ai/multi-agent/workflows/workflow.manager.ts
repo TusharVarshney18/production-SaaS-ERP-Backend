@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IWorkflowManager, WorkflowDefinition, WorkflowStep, WorkflowExecutionContext } from '../interfaces/workflow.interface';
+import {
+  IWorkflowManager,
+  WorkflowDefinition,
+  WorkflowStep,
+  WorkflowExecutionContext,
+} from '../interfaces/workflow.interface';
 import { ExecutionContext } from '../../execution/execution-context';
 import { AgentExecutorService } from '../../agents/executor/agent-executor.service';
 import { AgentRequest } from '../../agents/interfaces/agent.interface';
@@ -139,17 +144,13 @@ export class WorkflowManager implements IWorkflowManager {
 
       const response = await this.agentExecutor.execute(agentRequest);
 
-      await this.sharedMemory.set(
-        `step:${step.id}`,
-        response,
-        {
-          organizationId: context.organizationId,
-          workflowId: executionCtx.workflowId,
-          scope: 'workflow',
-          tags: ['workflow-step', step.id],
-          createdBy: step.agentName || 'system',
-        },
-      );
+      await this.sharedMemory.set(`step:${step.id}`, response, {
+        organizationId: context.organizationId,
+        workflowId: executionCtx.workflowId,
+        scope: 'workflow',
+        tags: ['workflow-step', step.id],
+        createdBy: step.agentName || 'system',
+      });
 
       return response;
     } catch (error) {

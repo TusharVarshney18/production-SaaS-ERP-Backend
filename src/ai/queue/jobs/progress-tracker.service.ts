@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IProgressTracker, JobProgress, ProgressUpdate } from '../interfaces/progress.interface';
+import { IProgressTracker, JobProgress } from '../interfaces/progress.interface';
 
 @Injectable()
 export class ProgressTracker implements IProgressTracker {
@@ -54,7 +54,7 @@ export class ProgressTracker implements IProgressTracker {
     progress.logs.push(`[${new Date().toISOString()}] Job cancelled`);
   }
 
-  async getAllProgress(organizationId: string): Promise<JobProgress[]> {
+  async getAllProgress(_organizationId: string): Promise<JobProgress[]> {
     return [...this.progressMap.values()];
   }
 

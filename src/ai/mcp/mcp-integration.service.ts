@@ -4,7 +4,6 @@ import { MCPToolExecutorService } from './tools/mcp-tool-executor.service';
 import { MCPClientService } from './client/mcp-client.service';
 import { ToolRegistryService } from '../registry/tool-registry.service';
 import { MCPDiscoveryService } from './discovery/mcp-discovery.service';
-import { AITool } from '../tools/interfaces/ai-tool.interface';
 
 @Injectable()
 export class MCPIntegrationService {

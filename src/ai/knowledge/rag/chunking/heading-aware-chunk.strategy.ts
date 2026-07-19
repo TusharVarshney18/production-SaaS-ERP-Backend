@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { IChunkStrategy, ChunkResult } from '../interfaces/chunk-strategy.interface';
-import { estimateTokens, RAG_DEFAULT_MIN_CHUNK_SIZE, RAG_DEFAULT_MAX_CHUNK_SIZE } from '../../../constants';
+import {
+  estimateTokens,
+  RAG_DEFAULT_MIN_CHUNK_SIZE,
+  RAG_DEFAULT_MAX_CHUNK_SIZE,
+} from '../../../constants';
 
 export interface HeadingAwareChunkOptions {
   minChunkSize?: number;

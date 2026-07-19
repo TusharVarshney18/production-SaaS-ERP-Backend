@@ -1,11 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IConsensusEngine, ConsensusRequest, ConsensusResult, Vote, VoteWeight } from '../interfaces/consensus.interface';
+import {
+  IConsensusEngine,
+  ConsensusRequest,
+  ConsensusResult,
+  Vote,
+  VoteWeight,
+} from '../interfaces/consensus.interface';
 import { generateId } from '../../constants';
 
 @Injectable()
 export class ConsensusEngine implements IConsensusEngine {
   private readonly logger = new Logger(ConsensusEngine.name);
-  private readonly pendingRequests = new Map<string, { request: ConsensusRequest; votes: Vote[] }>();
+  private readonly pendingRequests = new Map<
+    string,
+    { request: ConsensusRequest; votes: Vote[] }
+  >();
   private readonly humanApprovals = new Map<string, boolean>();
 
   async evaluate(request: ConsensusRequest): Promise<ConsensusResult> {
@@ -20,7 +29,7 @@ export class ConsensusEngine implements IConsensusEngine {
 
     this.logger.log(
       `Consensus evaluated: ${result.reached ? 'REACHED' : 'NOT REACHED'} ` +
-      `(winner: ${result.winner || 'none'}, confidence: ${result.confidence.toFixed(2)})`,
+        `(winner: ${result.winner || 'none'}, confidence: ${result.confidence.toFixed(2)})`,
     );
 
     return result;

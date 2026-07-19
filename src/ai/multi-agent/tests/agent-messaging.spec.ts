@@ -1,5 +1,5 @@
 import { AgentMessagingService } from '../messaging/agent-messaging.service';
-import { AgentMessage, MessageType } from '../interfaces/messaging.interface';
+import { AgentMessage } from '../interfaces/messaging.interface';
 
 describe('AgentMessagingService', () => {
   let service: AgentMessagingService;
@@ -68,7 +68,9 @@ describe('AgentMessagingService', () => {
     service.subscribe('task.completed', handler);
 
     await service.publishEvent('task.completed', { taskId: 't1' }, {
-      organizationId: 'org-1', userId: 'u1', requestId: 'r1',
+      organizationId: 'org-1',
+      userId: 'u1',
+      requestId: 'r1',
     } as any);
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -80,7 +82,9 @@ describe('AgentMessagingService', () => {
     service.unsubscribe('task.completed', handler);
 
     await service.publishEvent('task.completed', { taskId: 't1' }, {
-      organizationId: 'org-1', userId: 'u1', requestId: 'r1',
+      organizationId: 'org-1',
+      userId: 'u1',
+      requestId: 'r1',
     } as any);
 
     expect(handler).not.toHaveBeenCalled();

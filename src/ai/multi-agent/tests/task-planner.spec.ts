@@ -17,7 +17,10 @@ describe('TaskPlannerService', () => {
 
   it('should decompose a request into subtasks', async () => {
     const plan = await planner.decompose(
-      { text: 'Compare sales and inventory performance', context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any },
+      {
+        text: 'Compare sales and inventory performance',
+        context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
+      },
       ['sales', 'finance', 'hr'],
     );
 
@@ -28,7 +31,10 @@ describe('TaskPlannerService', () => {
 
   it('should handle empty agent list', async () => {
     const plan = await planner.decompose(
-      { text: 'Do something', context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any },
+      {
+        text: 'Do something',
+        context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
+      },
       [],
     );
 
@@ -37,7 +43,10 @@ describe('TaskPlannerService', () => {
 
   it('should validate a valid plan', async () => {
     const plan = await planner.decompose(
-      { text: 'Test request', context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any },
+      {
+        text: 'Test request',
+        context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
+      },
       ['sales'],
     );
 
@@ -58,7 +67,10 @@ describe('TaskPlannerService', () => {
 
   it('should get execution order for independent tasks', async () => {
     const plan = await planner.decompose(
-      { text: 'Get all data', context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any },
+      {
+        text: 'Get all data',
+        context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
+      },
       ['sales', 'finance', 'hr'],
     );
 
@@ -67,10 +79,21 @@ describe('TaskPlannerService', () => {
   });
 
   it('should estimate complexity', () => {
-    const { TaskPlannerService: TPS } = require('../planner/task-planner.service');
+    const TPS = TaskPlannerService;
     const plannerLocal = new TPS(agentRegistry);
     expect(plannerLocal.estimateComplexity([{ id: '1' } as any])).toBe('simple');
-    expect(plannerLocal.estimateComplexity([{ id: '1' }, { id: '2' }, { id: '3' }] as any)).toBe('medium');
-    expect(plannerLocal.estimateComplexity([{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }, { id: '6' }] as any)).toBe('complex');
+    expect(plannerLocal.estimateComplexity([{ id: '1' }, { id: '2' }, { id: '3' }] as any)).toBe(
+      'medium',
+    );
+    expect(
+      plannerLocal.estimateComplexity([
+        { id: '1' },
+        { id: '2' },
+        { id: '3' },
+        { id: '4' },
+        { id: '5' },
+        { id: '6' },
+      ] as any),
+    ).toBe('complex');
   });
 });

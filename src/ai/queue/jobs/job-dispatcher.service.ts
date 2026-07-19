@@ -9,8 +9,6 @@ import { WorkerManager } from '../workers/worker.manager';
 import { QueueMetricsService } from '../metrics/queue-metrics.service';
 import { JobDefinition, JobResult } from '../dto/job.dto';
 import { ExecutionContext } from '../../execution/execution-context';
-import { QueueError, QueueErrorCode } from '../interfaces/queue-error.interface';
-import { generateId } from '../../constants';
 
 @Injectable()
 export class JobDispatcher {
@@ -41,7 +39,10 @@ export class JobDispatcher {
     const startTime = Date.now();
 
     await this.progressTracker.markStarted(job.id);
-    await this.persistence.update(job.id, { status: 'processing', startedAt: new Date().toISOString() });
+    await this.persistence.update(job.id, {
+      status: 'processing',
+      startedAt: new Date().toISOString(),
+    });
 
     const processor = this.processors.get(job.type);
     if (!processor) {
@@ -60,7 +61,10 @@ export class JobDispatcher {
       const duration = Date.now() - startTime;
 
       await this.progressTracker.markCompleted(job.id, result.data);
-      await this.persistence.update(job.id, { status: 'completed', completedAt: new Date().toISOString() });
+      await this.persistence.update(job.id, {
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      });
       await this.persistence.saveResult(job.id, result.data);
       this.metrics.recordJob(job.type, duration, true);
 
@@ -74,11 +78,19 @@ export class JobDispatcher {
     const error = `No processor registered for job type: ${job.type}`;
     this.logger.error(error);
     await this.progressTracker.markFailed(job.id, error);
-    await this.persistence.update(job.id, { status: 'failed', error, completedAt: new Date().toISOString() });
+    await this.persistence.update(job.id, {
+      status: 'failed',
+      error,
+      completedAt: new Date().toISOString(),
+    });
     return { success: false, error, duration: Date.now() - startTime };
   }
 
-  private async handleProcessorError(job: JobDefinition, error: Error, startTime: number): Promise<JobResult> {
+  private async handleProcessorError(
+    job: JobDefinition,
+    error: Error,
+    startTime: number,
+  ): Promise<JobResult> {
     const errorMsg = error.message;
     const attempt = (job.attempts || 0) + 1;
     const duration = Date.now() - startTime;
@@ -89,13 +101,20 @@ export class JobDispatcher {
     const shouldRetry = await this.retryManager.shouldRetry(job.id, attempt, errorMsg);
     if (shouldRetry && attempt <= job.maxAttempts) {
       const delay = await this.retryManager.getDelay(job.id, attempt);
-      this.logger.warn(`Job ${job.id} failed (attempt ${attempt}), retrying in ${delay}ms: ${errorMsg}`);
+      this.logger.warn(
+        `Job ${job.id} failed (attempt ${attempt}), retrying in ${delay}ms: ${errorMsg}`,
+      );
       await this.persistence.update(job.id, {
         status: 'queued',
         attempts: attempt,
         error: errorMsg,
       });
-      return { success: false, error: errorMsg, duration, metadata: { retrying: true, delay, attempt } };
+      return {
+        success: false,
+        error: errorMsg,
+        duration,
+        metadata: { retrying: true, delay, attempt },
+      };
     }
 
     await this.deadLetterManager.moveToDlq(job, 'Max retries exceeded', errorMsg);

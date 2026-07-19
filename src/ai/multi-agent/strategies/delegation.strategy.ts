@@ -1,4 +1,5 @@
-export type DelegationStrategyType = 'round-robin' | 'least-loaded' | 'capability-match' | 'priority';
+export type DelegationStrategyType =
+  'round-robin' | 'least-loaded' | 'capability-match' | 'priority';
 
 export interface DelegationStrategyConfig {
   type: DelegationStrategyType;

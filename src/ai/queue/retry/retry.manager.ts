@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IRetryManager, RetryPolicy, RetryStrategy } from '../interfaces/retry.interface';
+import { IRetryManager, RetryPolicy } from '../interfaces/retry.interface';
 
 interface CircuitState {
   failures: number;
@@ -37,7 +37,10 @@ export class RetryManager implements IRetryManager {
     const policy = this.policies.get('default') || this.getDefaultPolicy();
     switch (policy.strategy) {
       case 'exponential':
-        return Math.min(policy.initialDelayMs * Math.pow(policy.backoffMultiplier, attempt - 1), policy.maxDelayMs);
+        return Math.min(
+          policy.initialDelayMs * Math.pow(policy.backoffMultiplier, attempt - 1),
+          policy.maxDelayMs,
+        );
       case 'linear':
         return policy.initialDelayMs * attempt;
       case 'fixed':
@@ -59,33 +62,60 @@ export class RetryManager implements IRetryManager {
 
   setRetryPolicy(jobType: string, policy: RetryPolicy): void {
     this.policies.set(jobType, policy);
-    this.logger.log(`Retry policy set for ${jobType}: ${policy.strategy} (max ${policy.maxRetries})`);
+    this.logger.log(
+      `Retry policy set for ${jobType}: ${policy.strategy} (max ${policy.maxRetries})`,
+    );
   }
 
   private setDefaultPolicies(): void {
     this.setRetryPolicy('default', this.getDefaultPolicy());
     this.setRetryPolicy('rag.indexing', {
-      strategy: 'exponential', maxRetries: 3, initialDelayMs: 2000, maxDelayMs: 60000, backoffMultiplier: 2,
-      retryOnTimeout: true, retryOnError: true,
+      strategy: 'exponential',
+      maxRetries: 3,
+      initialDelayMs: 2000,
+      maxDelayMs: 60000,
+      backoffMultiplier: 2,
+      retryOnTimeout: true,
+      retryOnError: true,
     });
     this.setRetryPolicy('rag.embedding', {
-      strategy: 'exponential', maxRetries: 3, initialDelayMs: 1000, maxDelayMs: 30000, backoffMultiplier: 2,
-      retryOnTimeout: true, retryOnError: true,
+      strategy: 'exponential',
+      maxRetries: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 30000,
+      backoffMultiplier: 2,
+      retryOnTimeout: true,
+      retryOnError: true,
     });
     this.setRetryPolicy('mcp.tool-execution', {
-      strategy: 'linear', maxRetries: 2, initialDelayMs: 1000, maxDelayMs: 5000, backoffMultiplier: 1,
-      retryOnTimeout: false, retryOnError: true,
+      strategy: 'linear',
+      maxRetries: 2,
+      initialDelayMs: 1000,
+      maxDelayMs: 5000,
+      backoffMultiplier: 1,
+      retryOnTimeout: false,
+      retryOnError: true,
     });
     this.setRetryPolicy('ai.chat', {
-      strategy: 'fixed', maxRetries: 1, initialDelayMs: 2000, maxDelayMs: 2000, backoffMultiplier: 1,
-      retryOnTimeout: true, retryOnError: false,
+      strategy: 'fixed',
+      maxRetries: 1,
+      initialDelayMs: 2000,
+      maxDelayMs: 2000,
+      backoffMultiplier: 1,
+      retryOnTimeout: true,
+      retryOnError: false,
     });
   }
 
   private getDefaultPolicy(): RetryPolicy {
     return {
-      strategy: 'exponential', maxRetries: 3, initialDelayMs: 1000, maxDelayMs: 30000, backoffMultiplier: 2,
-      retryOnTimeout: true, retryOnError: true,
+      strategy: 'exponential',
+      maxRetries: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 30000,
+      backoffMultiplier: 2,
+      retryOnTimeout: true,
+      retryOnError: true,
     };
   }
 

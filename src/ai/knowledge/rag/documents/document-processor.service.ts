@@ -50,7 +50,9 @@ export class DocumentProcessorService {
       );
     }
     if (buffer.length > RAG_MAX_FILE_SIZE) {
-      throw new Error(`File too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB (max: ${RAG_MAX_FILE_SIZE / 1024 / 1024}MB)`);
+      throw new Error(
+        `File too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB (max: ${RAG_MAX_FILE_SIZE / 1024 / 1024}MB)`,
+      );
     }
   }
 

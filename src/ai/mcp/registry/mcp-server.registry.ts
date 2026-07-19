@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IMCPRegistry, RegisteredServer } from '../interfaces/registry.interface';
-import { IMCPServer, ServerCapabilities } from '../interfaces/server.interface';
+import { IMCPServer } from '../interfaces/server.interface';
 import { MCPToolDefinition } from '../dto/tool.dto';
 import { MCPResourceDefinition } from '../dto/resource.dto';
 import { MCPPromptDefinition } from '../dto/prompt.dto';
-import { MCPError, MCPErrorCode } from '../interfaces/mcp-error.interface';
 import { CACHE_TTL_MS } from '../../constants';
 
 interface CachedToolList {
@@ -148,7 +147,10 @@ export class MCPServerRegistry implements IMCPRegistry {
     return this.listServers(organizationId).length;
   }
 
-  private async getOrFetchTools(serverId: string, organizationId: string): Promise<MCPToolDefinition[]> {
+  private async getOrFetchTools(
+    serverId: string,
+    organizationId: string,
+  ): Promise<MCPToolDefinition[]> {
     const cacheKey = `tools:${this.key(serverId, organizationId)}`;
     const cached = this.toolCache.get(cacheKey);
     if (cached && Date.now() - cached.cachedAt < this.cacheTtl) {
@@ -165,7 +167,10 @@ export class MCPServerRegistry implements IMCPRegistry {
     }
   }
 
-  private async getOrFetchResources(serverId: string, organizationId: string): Promise<MCPResourceDefinition[]> {
+  private async getOrFetchResources(
+    serverId: string,
+    organizationId: string,
+  ): Promise<MCPResourceDefinition[]> {
     const cacheKey = `resources:${this.key(serverId, organizationId)}`;
     const cached = this.resourceCache.get(cacheKey);
     if (cached && Date.now() - cached.cachedAt < this.cacheTtl) {
@@ -182,7 +187,10 @@ export class MCPServerRegistry implements IMCPRegistry {
     }
   }
 
-  private async getOrFetchPrompts(serverId: string, organizationId: string): Promise<MCPPromptDefinition[]> {
+  private async getOrFetchPrompts(
+    serverId: string,
+    organizationId: string,
+  ): Promise<MCPPromptDefinition[]> {
     const cacheKey = `prompts:${this.key(serverId, organizationId)}`;
     const cached = this.promptCache.get(cacheKey);
     if (cached && Date.now() - cached.cachedAt < this.cacheTtl) {

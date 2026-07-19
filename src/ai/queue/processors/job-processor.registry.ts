@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { IJobProcessor, JobProcessorDefinition } from '../interfaces/job-processor.interface';
+import { IJobProcessor } from '../interfaces/job-processor.interface';
 import { JobDispatcher } from '../jobs/job-dispatcher.service';
 import { DefaultJobProcessor } from './default-job.processor';
 import { AgentWorkflowProcessor } from './agent-workflow.processor';

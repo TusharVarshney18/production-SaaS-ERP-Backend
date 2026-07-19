@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IAgentMessagingService, AgentMessage, AgentEnvelope, MessageType, MessagePriority } from '../interfaces/messaging.interface';
+import {
+  IAgentMessagingService,
+  AgentMessage,
+  AgentEnvelope,
+} from '../interfaces/messaging.interface';
 import { ExecutionContext } from '../../execution/execution-context';
 import { generateId } from '../../constants';
 import { MCPError, MCPErrorCode } from '../../mcp/interfaces/mcp-error.interface';
@@ -64,7 +68,11 @@ export class AgentMessagingService implements IAgentMessagingService {
         reject(new MCPError('Message response timeout', MCPErrorCode.TIMEOUT));
       }, timeout);
 
-      this.pendingRequests.set(correlationId, { resolve: resolve as (v: unknown) => void, reject, timer });
+      this.pendingRequests.set(correlationId, {
+        resolve: resolve as (v: unknown) => void,
+        reject,
+        timer,
+      });
 
       if (message.envelope.targetAgent) {
         this.deliver(message.envelope.targetAgent, msg);
@@ -72,13 +80,15 @@ export class AgentMessagingService implements IAgentMessagingService {
     });
   }
 
-  async broadcast<T>(params: Omit<AgentMessage<T>, 'envelope'> & { targetAgents: string[] }): Promise<void> {
+  async broadcast<T>(
+    params: Omit<AgentMessage<T>, 'envelope'> & { targetAgents: string[] },
+  ): Promise<void> {
     const envelope: AgentEnvelope = {
       messageId: generateId('msg'),
       correlationId: generateId('corr'),
       type: 'broadcast',
       priority: 'normal',
-      sourceAgent: params.context.metadata?.agentName as string || 'system',
+      sourceAgent: (params.context.metadata?.agentName as string) || 'system',
       targetAgents: params.targetAgents,
       timestamp: new Date().toISOString(),
     };
@@ -96,7 +106,7 @@ export class AgentMessagingService implements IAgentMessagingService {
       correlationId: generateId('corr'),
       type: 'event',
       priority: 'normal',
-      sourceAgent: context.metadata?.agentName as string || 'system',
+      sourceAgent: (context.metadata?.agentName as string) || 'system',
       timestamp: new Date().toISOString(),
     };
 
@@ -145,7 +155,10 @@ export class AgentMessagingService implements IAgentMessagingService {
     }
     this.inboxes.get(agentName)!.push(message);
 
-    if (message.envelope.correlationId && this.pendingRequests.has(message.envelope.correlationId)) {
+    if (
+      message.envelope.correlationId &&
+      this.pendingRequests.has(message.envelope.correlationId)
+    ) {
       const pending = this.pendingRequests.get(message.envelope.correlationId)!;
       clearTimeout(pending.timer);
       this.pendingRequests.delete(message.envelope.correlationId);

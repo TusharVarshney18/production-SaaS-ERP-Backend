@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { IMCPConnectionProvider, ConnectionConfig } from '../interfaces/connection-provider.interface';
+import {
+  IMCPConnectionProvider,
+  ConnectionConfig,
+} from '../interfaces/connection-provider.interface';
 import { IMCPTransport } from '../interfaces/transport.interface';
 import { IMCPAuthProvider } from '../interfaces/auth-provider.interface';
 import { MCPTransportFactory, TransportType } from '../transport/mcp-transport.factory';

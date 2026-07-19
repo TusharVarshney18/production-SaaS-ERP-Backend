@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IMCPAuthProvider, AuthCredentials, AuthResult } from '../interfaces/auth-provider.interface';
-import { MCPError, MCPErrorCode } from '../interfaces/mcp-error.interface';
+import {
+  IMCPAuthProvider,
+  AuthCredentials,
+  AuthResult,
+} from '../interfaces/auth-provider.interface';
 
 @Injectable()
 export class JwtAuthProvider implements IMCPAuthProvider {

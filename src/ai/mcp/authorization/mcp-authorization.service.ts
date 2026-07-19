@@ -1,5 +1,4 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
-import { AIPermissionService } from '../../authorization/ai-permission.service';
 import { ExecutionContext } from '../../execution/execution-context';
 import { MCPError, MCPErrorCode } from '../interfaces/mcp-error.interface';
 
@@ -20,7 +19,9 @@ export class MCPAuthorizationService {
       orgList.set(`${entry.serverId}:${entry.toolName}`, entry.allowed);
     }
     this.allowLists.set(organizationId, orgList);
-    this.logger.log(`MCP tool allow-list updated for org ${organizationId}: ${tools.length} entries`);
+    this.logger.log(
+      `MCP tool allow-list updated for org ${organizationId}: ${tools.length} entries`,
+    );
   }
 
   isToolAllowed(serverId: string, toolName: string, organizationId: string): boolean {

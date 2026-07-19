@@ -48,11 +48,15 @@ describe('ExecutionScheduler', () => {
 
   it('should list tasks by organization', async () => {
     await scheduler.schedule({
-      name: 't1', input: {}, options: { priority: 'normal' },
+      name: 't1',
+      input: {},
+      options: { priority: 'normal' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
     await scheduler.schedule({
-      name: 't2', input: {}, options: { priority: 'normal' },
+      name: 't2',
+      input: {},
+      options: { priority: 'normal' },
       context: { organizationId: 'org-2', userId: 'u1', requestId: 'r1' } as any,
     });
 
@@ -62,11 +66,15 @@ describe('ExecutionScheduler', () => {
 
   it('should process next by priority', async () => {
     await scheduler.schedule({
-      name: 'low-priority', input: {}, options: { priority: 'low' },
+      name: 'low-priority',
+      input: {},
+      options: { priority: 'low' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
     await scheduler.schedule({
-      name: 'high-priority', input: {}, options: { priority: 'high' },
+      name: 'high-priority',
+      input: {},
+      options: { priority: 'high' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
 
@@ -77,11 +85,15 @@ describe('ExecutionScheduler', () => {
 
   it('should track queue size', async () => {
     await scheduler.schedule({
-      name: 't1', input: {}, options: { priority: 'normal' },
+      name: 't1',
+      input: {},
+      options: { priority: 'normal' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
     await scheduler.schedule({
-      name: 't2', input: {}, options: { priority: 'normal' },
+      name: 't2',
+      input: {},
+      options: { priority: 'normal' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
 
@@ -92,7 +104,9 @@ describe('ExecutionScheduler', () => {
 
   it('should mark task completed', async () => {
     const id = await scheduler.schedule({
-      name: 'task', input: {}, options: { priority: 'normal' },
+      name: 'task',
+      input: {},
+      options: { priority: 'normal' },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
 
@@ -104,7 +118,9 @@ describe('ExecutionScheduler', () => {
 
   it('should mark task failed and retry', async () => {
     const id = await scheduler.schedule({
-      name: 'retry-task', input: {}, options: { priority: 'normal', retryCount: 1, retryDelayMs: 10 },
+      name: 'retry-task',
+      input: {},
+      options: { priority: 'normal', retryCount: 1, retryDelayMs: 10 },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
 
@@ -116,7 +132,9 @@ describe('ExecutionScheduler', () => {
 
   it('should stop retrying after max attempts', async () => {
     const id = await scheduler.schedule({
-      name: 'fail-task', input: {}, options: { priority: 'normal', retryCount: 2, retryDelayMs: 10 },
+      name: 'fail-task',
+      input: {},
+      options: { priority: 'normal', retryCount: 2, retryDelayMs: 10 },
       context: { organizationId: 'org-1', userId: 'u1', requestId: 'r1' } as any,
     });
 

@@ -34,9 +34,11 @@ export class QueueMetricsService {
     const totalJobs = this.samples.length;
     const completedJobs = this.samples.filter((s) => s.success).length;
     const failedJobs = this.samples.filter((s) => !s.success).length;
-    const avgTime = completedJobs > 0
-      ? this.samples.filter((s) => s.success).reduce((sum, s) => sum + s.processingTime, 0) / completedJobs
-      : 0;
+    const avgTime =
+      completedJobs > 0
+        ? this.samples.filter((s) => s.success).reduce((sum, s) => sum + s.processingTime, 0) /
+          completedJobs
+        : 0;
     const elapsedMin = (Date.now() - this.startTime) / 60000;
     const throughput = elapsedMin > 0 ? recent.length / elapsedMin : 0;
 

@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ISharedMemoryService, SharedMemoryEntry, SharedMemoryQuery } from '../interfaces/shared-memory.interface';
+import {
+  ISharedMemoryService,
+  SharedMemoryEntry,
+  SharedMemoryQuery,
+} from '../interfaces/shared-memory.interface';
 import { generateId } from '../../constants';
 
 @Injectable()
@@ -42,7 +46,11 @@ export class SharedMemoryService implements ISharedMemoryService {
     return entry;
   }
 
-  async get(organizationId: string, key: string, workflowId?: string): Promise<SharedMemoryEntry | undefined> {
+  async get(
+    organizationId: string,
+    key: string,
+    workflowId?: string,
+  ): Promise<SharedMemoryEntry | undefined> {
     const entryKey = this.entryKey(organizationId, key, workflowId);
     const entry = this.store.get(entryKey);
     if (!entry) return undefined;

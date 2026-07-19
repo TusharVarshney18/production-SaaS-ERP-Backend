@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ITaskPlanner, TaskPlan, SubTask, TaskDecomposition } from '../interfaces/planner.interface';
+import {
+  ITaskPlanner,
+  TaskPlan,
+  SubTask,
+  TaskDecomposition,
+} from '../interfaces/planner.interface';
 import { AgentRequest } from '../../agents/interfaces/agent.interface';
 import { AgentRegistryService } from '../../agents/registry/agent-registry.service';
 import { generateId } from '../../constants';
@@ -33,7 +38,11 @@ export class TaskPlannerService implements ITaskPlanner {
       });
     }
 
-    if (researchAgents.length > 1 && text.includes('compare') || text.includes('all') || text.includes('overview')) {
+    if (
+      (researchAgents.length > 1 && text.includes('compare')) ||
+      text.includes('all') ||
+      text.includes('overview')
+    ) {
       const ceoSubtask: SubTask = {
         id: generateId('task'),
         description: `Synthesize findings from all agents: ${request.text.substring(0, 100)}`,

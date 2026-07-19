@@ -1,19 +1,17 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { IQueueProvider, QueueJob, QueueStats } from './interfaces/queue-provider.interface';
+import { IQueueProvider, QueueStats } from './interfaces/queue-provider.interface';
 import { IJobPersistence } from './interfaces/persistence.interface';
 import { IRetryManager } from './interfaces/retry.interface';
 import { IDeadLetterManager, DeadLetterEntry } from './interfaces/dead-letter.interface';
 import { IProgressTracker, JobProgress } from './interfaces/progress.interface';
-import { IJobScheduler, ScheduledJobConfig } from './interfaces/scheduler.interface';
+import { IJobScheduler } from './interfaces/scheduler.interface';
 import { JobDispatcher } from './jobs/job-dispatcher.service';
 import { WorkerManager } from './workers/worker.manager';
 import { QueueMetricsService } from './metrics/queue-metrics.service';
 import { QUEUE_PROVIDER_TOKEN } from './queue.module';
-import { JobDefinition, JobOptions, JobType, JobResult, JobStatus } from './dto/job.dto';
-import { QueueConfig, QueueMetrics } from './dto/queue-config.dto';
-import { QueueError, QueueErrorCode } from './interfaces/queue-error.interface';
+import { JobDefinition, JobOptions, JobType, JobStatus } from './dto/job.dto';
+import { QueueMetrics } from './dto/queue-config.dto';
 import { generateId } from '../constants';
-import { ExecutionContext } from '../execution/execution-context';
 
 @Injectable()
 export class QueueManagerService {
@@ -199,7 +197,11 @@ export class QueueManagerService {
         const scheduledAt = new Date(Date.now() + delay).toISOString();
         await this.queueProvider.schedule(queueJob.job, scheduledAt);
       } else {
-        await this.queueProvider.fail(queueJob.job.id, 'queue-manager', result.error || 'Unknown error');
+        await this.queueProvider.fail(
+          queueJob.job.id,
+          'queue-manager',
+          result.error || 'Unknown error',
+        );
       }
       this.processing = false;
       return true;

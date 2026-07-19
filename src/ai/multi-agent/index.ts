@@ -8,17 +8,72 @@ export { ConsensusEngine } from './consensus/consensus.engine';
 export { SharedMemoryService } from './shared-memory/shared-memory.service';
 export { WorkflowManager } from './workflows/workflow.manager';
 export { ExecutionScheduler } from './scheduler/execution-scheduler.service';
-export { IAgentOrchestrator, OrchestrationRequest, OrchestrationResult } from './interfaces/orchestrator.interface';
-export { ITaskPlanner, TaskPlan, SubTask, TaskPriority, TaskDependency } from './interfaces/planner.interface';
-export { ITaskCoordinator, CoordinationRequest, CoordinationResult } from './interfaces/coordinator.interface';
-export { IWorkflowManager, WorkflowDefinition, WorkflowStep, WorkflowType, WorkflowExecutionContext } from './interfaces/workflow.interface';
-export { IAgentMessagingService, AgentMessage, AgentEnvelope, MessageType, MessagePriority } from './interfaces/messaging.interface';
-export { ISharedMemoryService, SharedMemoryEntry, SharedMemoryQuery } from './interfaces/shared-memory.interface';
-export { IConsensusEngine, ConsensusRequest, ConsensusResult, Vote, VoteWeight } from './interfaces/consensus.interface';
-export { ITaskDelegationService, DelegationRequest, DelegationResult, AgentWorkload } from './interfaces/delegation.interface';
-export { IExecutionScheduler, ScheduledTask, ScheduleOptions, ExecutionStatus } from './interfaces/scheduler.interface';
+export {
+  IAgentOrchestrator,
+  OrchestrationRequest,
+  OrchestrationResult,
+} from './interfaces/orchestrator.interface';
+export {
+  ITaskPlanner,
+  TaskPlan,
+  SubTask,
+  TaskPriority,
+  TaskDependency,
+} from './interfaces/planner.interface';
+export {
+  ITaskCoordinator,
+  CoordinationRequest,
+  CoordinationResult,
+} from './interfaces/coordinator.interface';
+export {
+  IWorkflowManager,
+  WorkflowDefinition,
+  WorkflowStep,
+  WorkflowType,
+  WorkflowExecutionContext,
+} from './interfaces/workflow.interface';
+export {
+  IAgentMessagingService,
+  AgentMessage,
+  AgentEnvelope,
+  MessageType,
+  MessagePriority,
+} from './interfaces/messaging.interface';
+export {
+  ISharedMemoryService,
+  SharedMemoryEntry,
+  SharedMemoryQuery,
+} from './interfaces/shared-memory.interface';
+export {
+  IConsensusEngine,
+  ConsensusRequest,
+  ConsensusResult,
+  Vote,
+  VoteWeight,
+} from './interfaces/consensus.interface';
+export {
+  ITaskDelegationService,
+  DelegationRequest,
+  DelegationResult,
+  AgentWorkload,
+} from './interfaces/delegation.interface';
+export {
+  IExecutionScheduler,
+  ScheduledTask,
+  ScheduleOptions,
+  ExecutionStatus,
+} from './interfaces/scheduler.interface';
 export { MULTI_AGENT_EVENTS } from './events/index';
 export { DelegationStrategy, DelegationStrategyConfig } from './strategies/delegation.strategy';
 export { ConsensusStrategy, ConsensusStrategyConfig } from './strategies/consensus.strategy';
-export { MultiAgentRequest, MultiAgentResponse, MultiAgentResult, AgentTaskAssignment } from './dto/multi-agent.dto';
-export { CollaborationSession, CollaborationStatus, AgentCollaborationState } from './dto/collaboration.dto';
+export {
+  MultiAgentRequest,
+  MultiAgentResponse,
+  MultiAgentResult,
+  AgentTaskAssignment,
+} from './dto/multi-agent.dto';
+export {
+  CollaborationSession,
+  CollaborationStatus,
+  AgentCollaborationState,
+} from './dto/collaboration.dto';

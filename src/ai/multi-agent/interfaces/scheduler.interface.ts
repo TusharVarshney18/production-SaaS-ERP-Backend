@@ -1,7 +1,8 @@
 import { ExecutionContext } from '../../execution/execution-context';
 import { TaskPriority } from './planner.interface';
 
-export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out';
+export type ExecutionStatus =
+  'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timed_out';
 
 export interface ScheduleOptions {
   priority: TaskPriority;
@@ -29,7 +30,9 @@ export interface ScheduledTask {
 }
 
 export interface IExecutionScheduler {
-  schedule(task: Omit<ScheduledTask, 'id' | 'status' | 'createdAt' | 'retryAttempts'>): Promise<string>;
+  schedule(
+    task: Omit<ScheduledTask, 'id' | 'status' | 'createdAt' | 'retryAttempts'>,
+  ): Promise<string>;
   cancel(taskId: string): Promise<boolean>;
   getStatus(taskId: string): ScheduledTask | undefined;
   listByOrganization(organizationId: string): ScheduledTask[];

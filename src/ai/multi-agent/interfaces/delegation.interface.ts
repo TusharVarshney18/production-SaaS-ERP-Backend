@@ -1,4 +1,4 @@
-import { AgentRequest, AgentResponse, AgentCapability } from '../../agents/interfaces/agent.interface';
+import { AgentResponse } from '../../agents/interfaces/agent.interface';
 
 export interface AgentWorkload {
   agentName: string;
@@ -30,7 +30,10 @@ export interface DelegationResult {
 
 export interface ITaskDelegationService {
   delegate(request: DelegationRequest): Promise<DelegationResult>;
-  findBestAgent(requiredCapability: string, context: import('../../execution/execution-context').ExecutionContext): Promise<string | null>;
+  findBestAgent(
+    requiredCapability: string,
+    context: import('../../execution/execution-context').ExecutionContext,
+  ): Promise<string | null>;
   getWorkload(agentName: string): AgentWorkload | undefined;
   getAllWorkloads(): AgentWorkload[];
   resetWorkload(agentName: string): void;

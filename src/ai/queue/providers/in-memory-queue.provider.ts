@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IQueueProvider, QueueJob, QueueOptions, QueueStats } from '../interfaces/queue-provider.interface';
-import { JobDefinition, JobStatus, JobPriority, JobResult } from '../dto/job.dto';
+import {
+  IQueueProvider,
+  QueueJob,
+  QueueOptions,
+  QueueStats,
+} from '../interfaces/queue-provider.interface';
+import { JobDefinition, JobResult } from '../dto/job.dto';
 import { QueueError, QueueErrorCode } from '../interfaces/queue-error.interface';
 import { generateId } from '../../constants';
 
@@ -36,7 +41,8 @@ export class InMemoryQueueProvider implements IQueueProvider {
 
   async enqueue(job: JobDefinition, options?: QueueOptions): Promise<string> {
     if (this.paused) throw new QueueError('Queue is paused', QueueErrorCode.QUEUE_PAUSED);
-    if (this.queue.length >= 10000) throw new QueueError('Queue is full', QueueErrorCode.QUEUE_FULL);
+    if (this.queue.length >= 10000)
+      throw new QueueError('Queue is full', QueueErrorCode.QUEUE_FULL);
 
     const queueJob: QueueJob = {
       job: { ...job, id: job.id || generateId('job') },
@@ -84,14 +90,14 @@ export class InMemoryQueueProvider implements IQueueProvider {
     return true;
   }
 
-  async fail(jobId: string, workerId: string, error: string): Promise<boolean> {
+  async fail(jobId: string, workerId: string, _error: string): Promise<boolean> {
     if (this.active.get(jobId) !== workerId) return false;
     this.active.delete(jobId);
     this.stats.failed++;
     return true;
   }
 
-  async progress(jobId: string, _percentage: number, _message?: string): Promise<void> {
+  async progress(_jobId: string, _percentage: number, _message?: string): Promise<void> {
     // progress is tracked externally via ProgressTracker
   }
 
@@ -139,7 +145,8 @@ export class InMemoryQueueProvider implements IQueueProvider {
       completedJobs: this.stats.completed,
       failedJobs: this.stats.failed,
       delayedJobs: this.delayed.size,
-      averageProcessingTime: this.stats.completed > 0 ? this.stats.totalProcessingTime / this.stats.completed : 0,
+      averageProcessingTime:
+        this.stats.completed > 0 ? this.stats.totalProcessingTime / this.stats.completed : 0,
       throughputPerMinute: elapsed > 0 ? (this.stats.completed + this.stats.failed) / elapsed : 0,
     };
   }

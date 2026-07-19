@@ -42,7 +42,9 @@ export class StdioTransport extends BaseTransport {
     });
 
     this.process.on('error', (err) => {
-      this.handleError(new MCPError(`STDIO process error: ${err.message}`, MCPErrorCode.TRANSPORT_ERROR));
+      this.handleError(
+        new MCPError(`STDIO process error: ${err.message}`, MCPErrorCode.TRANSPORT_ERROR),
+      );
     });
 
     this.process.on('close', (code) => {

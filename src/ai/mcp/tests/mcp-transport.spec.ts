@@ -58,8 +58,7 @@ describe('StdioTransport', () => {
 
   it('should register message handler', () => {
     const transport = new StdioTransport({ command: 'node' });
-    let received: unknown = null;
-    transport.onMessage((msg) => { received = msg; });
+    transport.onMessage(() => {});
     expect(transport).toBeDefined();
   });
 });

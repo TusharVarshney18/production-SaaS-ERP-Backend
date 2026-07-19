@@ -1,5 +1,5 @@
 import { ConsensusEngine } from '../consensus/consensus.engine';
-import { Vote, ConsensusRequest } from '../interfaces/consensus.interface';
+import { Vote } from '../interfaces/consensus.interface';
 
 describe('ConsensusEngine', () => {
   let engine: ConsensusEngine;
@@ -79,9 +79,7 @@ describe('ConsensusEngine', () => {
   });
 
   it('should add votes to pending request', async () => {
-    const votes: Vote[] = [
-      { agentName: 'a1', choice: 'yes', confidence: 0.9, weight: 1 },
-    ];
+    const votes: Vote[] = [{ agentName: 'a1', choice: 'yes', confidence: 0.9, weight: 1 }];
 
     const initial = await engine.evaluate({
       question: 'Test?',

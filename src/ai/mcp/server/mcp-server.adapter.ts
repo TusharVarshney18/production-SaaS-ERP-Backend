@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IMCPServer, ServerInfo, ServerCapabilities } from '../interfaces/server.interface';
+import { IMCPServer, ServerInfo } from '../interfaces/server.interface';
 import { IMCPTransport } from '../interfaces/transport.interface';
 import { IMCPAuthProvider, AuthCredentials } from '../interfaces/auth-provider.interface';
 import { MCPToolDefinition } from '../dto/tool.dto';
@@ -17,7 +17,10 @@ export class MCPServerAdapter implements IMCPServer {
   private authCredentials: AuthCredentials | null = null;
   private connected_ = false;
   private readonly logger = new Logger(MCPServerAdapter.name);
-  private readonly pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  private readonly pending = new Map<
+    string,
+    { resolve: (v: unknown) => void; reject: (e: Error) => void }
+  >();
 
   constructor(
     public readonly info: ServerInfo,
@@ -32,7 +35,9 @@ export class MCPServerAdapter implements IMCPServer {
     this.authCredentials = this.getCredentials?.() || null;
 
     this.transport.onMessage((msg) => this.handleResponse(msg as MCPResponse));
-    this.transport.onError((err) => this.logger.error(`Server "${this.info.name}" transport error: ${err.message}`));
+    this.transport.onError((err) =>
+      this.logger.error(`Server "${this.info.name}" transport error: ${err.message}`),
+    );
     this.transport.onClose(() => {
       this.connected_ = false;
       this.logger.warn(`Server "${this.info.name}" connection closed`);
@@ -158,12 +163,10 @@ export class MCPServerAdapter implements IMCPServer {
     this.pending.delete(response.id);
     if (response.error) {
       pending.reject(
-        new MCPError(
-          `Server error: ${response.error.message}`,
-          MCPErrorCode.SERVER_ERROR,
-          500,
-          { code: response.error.code, data: response.error.data },
-        ),
+        new MCPError(`Server error: ${response.error.message}`, MCPErrorCode.SERVER_ERROR, 500, {
+          code: response.error.code,
+          data: response.error.data,
+        }),
       );
     } else {
       pending.resolve(response.result);

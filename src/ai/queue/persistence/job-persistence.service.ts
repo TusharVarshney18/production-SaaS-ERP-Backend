@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IJobPersistence, PersistenceFilter } from '../interfaces/persistence.interface';
-import { JobDefinition, JobStatus } from '../dto/job.dto';
+import { JobDefinition } from '../dto/job.dto';
 
 @Injectable()
 export class JobPersistenceService implements IJobPersistence {
@@ -29,7 +29,8 @@ export class JobPersistenceService implements IJobPersistence {
 
   async list(filter: PersistenceFilter): Promise<JobDefinition[]> {
     let results = [...this.jobs.values()];
-    if (filter.organizationId) results = results.filter((j) => j.organizationId === filter.organizationId);
+    if (filter.organizationId)
+      results = results.filter((j) => j.organizationId === filter.organizationId);
     if (filter.status) results = results.filter((j) => j.status === filter.status);
     if (filter.jobType) results = results.filter((j) => j.type === filter.jobType);
     if (filter.createdAfter) results = results.filter((j) => j.createdAt >= filter.createdAfter!);

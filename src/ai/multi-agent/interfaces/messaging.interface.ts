@@ -24,7 +24,9 @@ export interface AgentMessage<T = unknown> {
 export interface IAgentMessagingService {
   send<T>(message: AgentMessage<T>): Promise<void>;
   sendAndWait<T, R>(message: AgentMessage<T>, timeout?: number): Promise<R>;
-  broadcast<T>(message: Omit<AgentMessage<T>, 'envelope'> & { targetAgents: string[] }): Promise<void>;
+  broadcast<T>(
+    message: Omit<AgentMessage<T>, 'envelope'> & { targetAgents: string[] },
+  ): Promise<void>;
   publishEvent<T>(event: string, payload: T, context: ExecutionContext): Promise<void>;
   subscribe(event: string, handler: (message: AgentMessage) => Promise<void>): void;
   unsubscribe(event: string, handler: (message: AgentMessage) => Promise<void>): void;

@@ -1,11 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IMCPAuthProvider, AuthCredentials, AuthResult } from '../interfaces/auth-provider.interface';
+import {
+  IMCPAuthProvider,
+  AuthCredentials,
+  AuthResult,
+} from '../interfaces/auth-provider.interface';
 
 @Injectable()
 export class BearerTokenAuthProvider implements IMCPAuthProvider {
   readonly name = 'bearer';
   private readonly logger = new Logger(BearerTokenAuthProvider.name);
-  private readonly validTokens = new Map<string, { identity: Record<string, unknown>; expiresAt?: number }>();
+  private readonly validTokens = new Map<
+    string,
+    { identity: Record<string, unknown>; expiresAt?: number }
+  >();
 
   registerToken(token: string, identity: Record<string, unknown>, ttlMs?: number): void {
     this.validTokens.set(token, {

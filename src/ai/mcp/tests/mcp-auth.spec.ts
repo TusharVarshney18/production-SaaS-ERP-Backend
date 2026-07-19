@@ -79,7 +79,9 @@ describe('JwtAuthProvider', () => {
   });
 
   it('should validate a valid JWT', async () => {
-    const payload = Buffer.from(JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 + 3600 })).toString('base64url');
+    const payload = Buffer.from(
+      JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 + 3600 }),
+    ).toString('base64url');
     const token = `header.${payload}.signature`;
     const result = await provider.validate(token);
     expect(result.authenticated).toBe(true);
@@ -93,14 +95,18 @@ describe('JwtAuthProvider', () => {
   });
 
   it('should reject expired JWT', async () => {
-    const payload = Buffer.from(JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 - 3600 })).toString('base64url');
+    const payload = Buffer.from(
+      JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 - 3600 }),
+    ).toString('base64url');
     const token = `header.${payload}.signature`;
     const result = await provider.validate(token);
     expect(result.authenticated).toBe(false);
   });
 
   it('should reject revoked tokens', async () => {
-    const payload = Buffer.from(JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 + 3600 })).toString('base64url');
+    const payload = Buffer.from(
+      JSON.stringify({ sub: 'user-1', exp: Date.now() / 1000 + 3600 }),
+    ).toString('base64url');
     const token = `header.${payload}.signature`;
     await provider.revoke(token);
     const result = await provider.validate(token);

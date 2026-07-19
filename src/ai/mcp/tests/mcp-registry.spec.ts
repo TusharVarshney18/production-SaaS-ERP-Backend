@@ -1,5 +1,4 @@
 import { MCPServerRegistry } from '../registry/mcp-server.registry';
-import { MCPError } from '../interfaces/mcp-error.interface';
 
 describe('MCPServerRegistry', () => {
   let registry: MCPServerRegistry;
@@ -11,20 +10,30 @@ describe('MCPServerRegistry', () => {
       info: {
         name: 'test-server',
         version: '1.0.0',
-        capabilities: { tools: true, resources: true, prompts: true, streaming: false, logging: false },
+        capabilities: {
+          tools: true,
+          resources: true,
+          prompts: true,
+          streaming: false,
+          logging: false,
+        },
       },
       connect: jest.fn(),
       disconnect: jest.fn(),
       listTools: jest.fn().mockResolvedValue([
-        { name: 'tool1', description: 'Test tool 1', inputSchema: { type: 'object', properties: {} } },
-        { name: 'tool2', description: 'Test tool 2', inputSchema: { type: 'object', properties: {} } },
+        {
+          name: 'tool1',
+          description: 'Test tool 1',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'tool2',
+          description: 'Test tool 2',
+          inputSchema: { type: 'object', properties: {} },
+        },
       ]),
-      listResources: jest.fn().mockResolvedValue([
-        { uri: 'file:///test.txt', name: 'test.txt' },
-      ]),
-      listPrompts: jest.fn().mockResolvedValue([
-        { name: 'prompt1', description: 'Test prompt' },
-      ]),
+      listResources: jest.fn().mockResolvedValue([{ uri: 'file:///test.txt', name: 'test.txt' }]),
+      listPrompts: jest.fn().mockResolvedValue([{ name: 'prompt1', description: 'Test prompt' }]),
       executeTool: jest.fn(),
       readResource: jest.fn(),
       getPrompt: jest.fn(),

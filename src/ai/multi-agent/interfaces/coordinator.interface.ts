@@ -1,4 +1,4 @@
-import { AgentRequest, AgentResponse } from '../../agents/interfaces/agent.interface';
+import { AgentResponse } from '../../agents/interfaces/agent.interface';
 import { TaskPlan, SubTask } from './planner.interface';
 import { ExecutionContext } from '../../execution/execution-context';
 

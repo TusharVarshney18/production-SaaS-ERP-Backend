@@ -104,8 +104,14 @@ export class JobSchedulerService implements IJobScheduler {
 
   private clearTimers(scheduleId: string): void {
     const timer = this.timers.get(scheduleId);
-    if (timer) { clearTimeout(timer); this.timers.delete(scheduleId); }
+    if (timer) {
+      clearTimeout(timer);
+      this.timers.delete(scheduleId);
+    }
     const interval = this.intervalTimers.get(scheduleId);
-    if (interval) { clearInterval(interval); this.intervalTimers.delete(scheduleId); }
+    if (interval) {
+      clearInterval(interval);
+      this.intervalTimers.delete(scheduleId);
+    }
   }
 }

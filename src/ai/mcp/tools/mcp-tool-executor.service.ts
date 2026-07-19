@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IMCPToolExecutor, MCPToolResult, mcpToolToAIToolParams } from '../interfaces/tool-executor.interface';
+import {
+  IMCPToolExecutor,
+  MCPToolResult,
+  mcpToolToAIToolParams,
+} from '../interfaces/tool-executor.interface';
 import { MCPServerRegistry } from '../registry/mcp-server.registry';
 import { MCPAuthorizationService } from '../authorization/mcp-authorization.service';
 import { ExecutionContext } from '../../execution/execution-context';
 import { AITool } from '../../tools/interfaces/ai-tool.interface';
 import { AIToolResult } from '../../interfaces/runtime.interface';
-import { MCPError, MCPErrorCode } from '../interfaces/mcp-error.interface';
 
 @Injectable()
 export class MCPToolExecutorService implements IMCPToolExecutor {
@@ -49,7 +52,10 @@ export class MCPToolExecutorService implements IMCPToolExecutor {
     yield await this.execute(serverName, toolName, args);
   }
 
-  createAIToolAdapter(serverId: string, toolDef: import('../interfaces/tool-executor.interface').MCPToolDefinition): AITool {
+  createAIToolAdapter(
+    serverId: string,
+    toolDef: import('../interfaces/tool-executor.interface').MCPToolDefinition,
+  ): AITool {
     return {
       name: `mcp:${serverId}:${toolDef.name}`,
       description: toolDef.description || `MCP tool: ${toolDef.name} on ${serverId}`,
@@ -65,7 +71,10 @@ export class MCPToolExecutorService implements IMCPToolExecutor {
         mcpToolName: toolDef.name,
         mcpServerName: serverId,
       },
-      execute: async (input: unknown, _context: ExecutionContext): Promise<AIToolResult<unknown>> => {
+      execute: async (
+        input: unknown,
+        _context: ExecutionContext,
+      ): Promise<AIToolResult<unknown>> => {
         const startTime = Date.now();
         try {
           const result = await this.execute(serverId, toolDef.name, input);

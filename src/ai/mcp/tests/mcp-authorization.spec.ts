@@ -27,7 +27,9 @@ describe('MCPAuthorizationService', () => {
     ]);
     const context = { organizationId: 'org-1', userId: 'user-1', requestId: 'r1' } as any;
     await expect(auth.enforceToolAccess('server-1', 'ok', context)).resolves.toBeUndefined();
-    await expect(auth.enforceToolAccess('server-1', 'nope', context)).rejects.toThrow('not allowed');
+    await expect(auth.enforceToolAccess('server-1', 'nope', context)).rejects.toThrow(
+      'not allowed',
+    );
   });
 
   it('should validate input size', () => {

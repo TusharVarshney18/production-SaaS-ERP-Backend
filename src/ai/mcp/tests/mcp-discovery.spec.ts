@@ -13,11 +13,19 @@ describe('MCPDiscoveryService', () => {
       info: {
         name: 'test-server',
         version: '2.0.0',
-        capabilities: { tools: true, resources: true, prompts: false, streaming: false, logging: false },
+        capabilities: {
+          tools: true,
+          resources: true,
+          prompts: false,
+          streaming: false,
+          logging: false,
+        },
       },
       connect: jest.fn(),
       disconnect: jest.fn(),
-      listTools: jest.fn().mockResolvedValue([{ name: 't1', inputSchema: { type: 'object', properties: {} } }]),
+      listTools: jest
+        .fn()
+        .mockResolvedValue([{ name: 't1', inputSchema: { type: 'object', properties: {} } }]),
       listResources: jest.fn().mockResolvedValue([{ uri: '/test', name: 'test' }]),
       listPrompts: jest.fn().mockResolvedValue([]),
       executeTool: jest.fn(),

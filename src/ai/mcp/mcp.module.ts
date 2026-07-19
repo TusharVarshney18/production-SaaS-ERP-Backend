@@ -1,5 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { Module } from '@nestjs/common';
 import { AuthorizationModule } from '../../authorization/authorization.module';
 import { AuditLogModule } from '../../audit-log/audit-log.module';
 import { StdioTransport } from './transport/stdio.transport';

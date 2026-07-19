@@ -4,9 +4,16 @@ import { DocumentChunk } from '../dto/chunk.dto';
 export interface IKnowledgeRepository {
   createDocument(doc: KnowledgeDocument): Promise<KnowledgeDocument>;
   getDocument(id: string): Promise<KnowledgeDocument | null>;
-  updateDocument(id: string, updates: Partial<KnowledgeDocument>): Promise<KnowledgeDocument | null>;
+  updateDocument(
+    id: string,
+    updates: Partial<KnowledgeDocument>,
+  ): Promise<KnowledgeDocument | null>;
   deleteDocument(id: string): Promise<boolean>;
-  listDocuments(organizationId: string, limit?: number, offset?: number): Promise<KnowledgeDocument[]>;
+  listDocuments(
+    organizationId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<KnowledgeDocument[]>;
   countDocuments(organizationId: string, status?: DocumentStatus): Promise<number>;
   addVersion(version: DocumentVersion): Promise<DocumentVersion>;
   getVersions(documentId: string): Promise<DocumentVersion[]>;

@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IExecutionScheduler, ScheduledTask, ScheduleOptions, ExecutionStatus } from '../interfaces/scheduler.interface';
-import { ExecutionContext } from '../../execution/execution-context';
+import {
+  IExecutionScheduler,
+  ScheduledTask,
+  ExecutionStatus,
+} from '../interfaces/scheduler.interface';
 import { generateId } from '../../constants';
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -16,7 +19,9 @@ export class ExecutionScheduler implements IExecutionScheduler {
   private readonly tasks = new Map<string, ScheduledTask>();
   private readonly delayedTimers = new Map<string, NodeJS.Timeout>();
 
-  async schedule(task: Omit<ScheduledTask, 'id' | 'status' | 'createdAt' | 'retryAttempts'>): Promise<string> {
+  async schedule(
+    task: Omit<ScheduledTask, 'id' | 'status' | 'createdAt' | 'retryAttempts'>,
+  ): Promise<string> {
     const id = generateId('sched');
     const scheduled: ScheduledTask = {
       id,
@@ -96,7 +101,9 @@ export class ExecutionScheduler implements IExecutionScheduler {
   }
 
   getQueueSize(organizationId?: string): number {
-    const tasks = organizationId ? this.listByOrganization(organizationId) : [...this.tasks.values()];
+    const tasks = organizationId
+      ? this.listByOrganization(organizationId)
+      : [...this.tasks.values()];
     return tasks.filter((t) => t.status === 'pending' || t.status === 'running').length;
   }
 
@@ -121,7 +128,9 @@ export class ExecutionScheduler implements IExecutionScheduler {
         task.status = 'running';
       }, delay);
       this.delayedTimers.set(taskId, timer);
-      this.logger.warn(`Task ${taskId} will retry (${task.retryAttempts}/${task.options.retryCount})`);
+      this.logger.warn(
+        `Task ${taskId} will retry (${task.retryAttempts}/${task.options.retryCount})`,
+      );
     } else {
       task.status = 'failed';
       task.completedAt = new Date().toISOString();

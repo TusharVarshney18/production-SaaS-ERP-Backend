@@ -11,7 +11,12 @@ export interface IConversationRepository {
   getConversation(id: string): Promise<Conversation | null>;
   updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | null>;
   deleteConversation(id: string): Promise<boolean>;
-  listConversations(organizationId: string, userId?: string, limit?: number, offset?: number): Promise<Conversation[]>;
+  listConversations(
+    organizationId: string,
+    userId?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<Conversation[]>;
   countConversations(organizationId: string, userId?: string): Promise<number>;
   addMessage(message: ConversationMessage): Promise<ConversationMessage>;
   getMessages(conversationId: string, limit?: number): Promise<ConversationMessage[]>;
@@ -26,7 +31,12 @@ export interface IConversationRepository {
 export interface IMemoryRepository {
   saveMemory(entry: MemoryEntry): Promise<MemoryEntry>;
   getMemory(organizationId: string, key: string, userId?: string): Promise<MemoryEntry | null>;
-  findMemories(organizationId: string, type?: MemoryType, userId?: string, tags?: string[]): Promise<MemoryEntry[]>;
+  findMemories(
+    organizationId: string,
+    type?: MemoryType,
+    userId?: string,
+    tags?: string[],
+  ): Promise<MemoryEntry[]>;
   updateMemory(id: string, updates: Partial<MemoryEntry>): Promise<MemoryEntry | null>;
   deleteMemory(id: string): Promise<boolean>;
   deleteMemoriesByScope(organizationId: string, scope: string, userId?: string): Promise<number>;
